@@ -27,4 +27,4 @@ Workhub is a web-based platform designed to provide flexible, accessible workspa
    ```
 
 5. **Access the App:**
-   Open your browser and go to `http://localhost:3000`.
+   Open your browser and go to `http://localhost:5173`.
