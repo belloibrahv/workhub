@@ -1,73 +1,30 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
-import { useAuth } from './context/AuthContext';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import HomePage from './pages/HomePage';
 import HubDetailPage from './pages/HubDetailPage';
 import CheckinPage from './pages/CheckinPage';
 import ToolSelectionPage from './pages/ToolSelectionPage';
 import ConfirmationPage from './pages/ConfirmationPage';
-import LoginPage from './pages/LoginPage';
-
-// Protected Route Component
-const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user } = useAuth();
-  return user ? <>{children}</> : <Navigate to="/login" replace />;
-};
+import BookingHistoryPage from '@/pages/BookingHistoryPage';
+import Footer from '@/components/Footer';
 
 const App: React.FC = () => {
   return (
-    <AuthProvider>
-      <Router>
-        <div className="app">
-          <Navbar />
-          <Routes>
-            <Route path="/login" element={<LoginPage />} />
-            <Route 
-              path="/" 
-              element={
-                <ProtectedRoute>
-                  <HomePage />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/hub/:hubId" 
-              element={
-                <ProtectedRoute>
-                  <HubDetailPage />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/checkin/:hubId" 
-              element={
-                <ProtectedRoute>
-                  <CheckinPage />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/tools/:hubId" 
-              element={
-                <ProtectedRoute>
-                  <ToolSelectionPage />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/confirmation" 
-              element={
-                <ProtectedRoute>
-                  <ConfirmationPage />
-                </ProtectedRoute>
-              } 
-            />
-          </Routes>
-        </div>
-      </Router>
-    </AuthProvider>
+    <Router>
+      <div className="app">
+        <Navbar />
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/hub/:hubId" element={<HubDetailPage />} />
+          <Route path="/checkin/:hubId" element={<CheckinPage />} />
+          <Route path="/tools/:hubId" element={<ToolSelectionPage />} />
+          <Route path="/confirmation" element={<ConfirmationPage />} />
+          <Route path="/history" element={<BookingHistoryPage />} />
+        </Routes>
+        <Footer />
+      </div>
+    </Router>
   );
 };
 

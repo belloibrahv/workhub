@@ -1,118 +1,93 @@
+// src/pages/CheckinPage.tsx
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Hub } from '../types/Hub';
-
-interface CheckinFormData {
-  name: string;
-  email: string;
-  occupation: string;
-}
-
-const HUBS: Hub[] = [
-  {
-    id: 'lekki',
-    name: 'Lekki Hub',
-    location: 'Lekki, Lagos',
-    price: 5000,
-    imageUrl: '/images/lekki-hub.jpg'
-  },
-  // Previous hubs...
-];
 
 const CheckinPage: React.FC = () => {
   const { hubId } = useParams<{ hubId: string }>();
   const navigate = useNavigate();
-  
-  const selectedHub = HUBS.find(hub => hub.id === hubId);
 
-  const [formData, setFormData] = useState<CheckinFormData>({
-    name: '',
+  const [formData, setFormData] = useState({
+    fullName: '',
     email: '',
-    occupation: ''
+    phone: '',
+    age: '',
+    visitDay: '',
+    startHour: '',
+    endHour: '',
   });
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const [error, setError] = useState<string | null>(null);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const validateForm = () => {
+    const { fullName, email, phone, age, visitDay, startHour, endHour } = formData;
+    if (!fullName || !email || !phone || !age || !visitDay || !startHour || !endHour) {
+      return 'All fields are required.';
+    }
+    if (new Date(visitDay) < new Date()) {
+      return 'Visit day cannot be in the past.';
+    }
+    return null;
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Simulate booking information for model training
+    const validationError = validateForm();
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+    setError(null);
+
+    // Save booking information to global variable for later use
     window.currentBookingInfo = {
-      hub: selectedHub,
+      hubId,
       userDetails: formData,
-      isInFinalPage: true
+      isInFinalPage: false,
     };
 
-    // Simulate booking result
-    window.bookingResults = {
-      status: 'success',
-      hubId: hubId,
-      userDetails: formData,
-      timestamp: new Date().toISOString()
-    };
-
-    // Navigate to tool selection page
     navigate(`/tools/${hubId}`);
   };
 
-  if (!selectedHub) {
-    return <div>Hub not found</div>;
-  }
-
   return (
     <div className="checkin-page">
-      <h1>Check-in to {selectedHub.name}</h1>
-      <div className="checkin-container">
-        <div className="hub-info">
-          <h2>{selectedHub.name}</h2>
-          <p>Location: {selectedHub.location}</p>
-          <p>Access Fee: ₦{selectedHub.price}</p>
+      <h1>Check In to Your Hub</h1>
+      {error && <div className="error-message">{error}</div>}
+      <form onSubmit={handleSubmit} className="checkin-form">
+        <div className="form-group">
+          <label>Full Name</label>
+          <input type="text" name="fullName" value={formData.fullName} onChange={handleInputChange} required />
         </div>
-        <form onSubmit={handleSubmit} className="checkin-form">
-          <div className="form-group">
-            <label htmlFor="name">Full Name</label>
-            <input
-              type="text"
-              id="name"
-              name="name"
-              value={formData.name}
-              onChange={handleInputChange}
-              required
-            />
-          </div>
-          <div className="form-group">
-            <label htmlFor="email">Email</label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              value={formData.email}
-              onChange={handleInputChange}
-              required
-            />
-          </div>
-          <div className="form-group">
-            <label htmlFor="occupation">Occupation</label>
-            <input
-              type="text"
-              id="occupation"
-              name="occupation"
-              value={formData.occupation}
-              onChange={handleInputChange}
-              required
-            />
-          </div>
-          <button type="submit" className="submit-btn">
-            Proceed to Payment
-          </button>
-        </form>
-      </div>
+        <div className="form-group">
+          <label>Email</label>
+          <input type="email" name="email" value={formData.email} onChange={handleInputChange} required />
+        </div>
+        <div className="form-group">
+          <label>Phone Number</label>
+          <input type="tel" name="phone" value={formData.phone} onChange={handleInputChange} required />
+        </div>
+        <div className="form-group">
+          <label>Age</label>
+          <input type="number" name="age" value={formData.age} onChange={handleInputChange} required />
+        </div>
+        <div className="form-group">
+          <label>Visit Day</label>
+          <input type="date" name="visitDay" value={formData.visitDay} onChange={handleInputChange} required />
+        </div>
+        <div className="form-group">
+          <label>Start Hour</label>
+          <input type="time" name="startHour" value={formData.startHour} onChange={handleInputChange} required />
+        </div>
+        <div className="form-group">
+          <label>End Hour</label>
+          <input type="time" name="endHour" value={formData.endHour} onChange={handleInputChange} required />
+        </div>
+        <button type="submit" className="submit-btn">Proceed to Tools</button>
+      </form>
     </div>
   );
 };

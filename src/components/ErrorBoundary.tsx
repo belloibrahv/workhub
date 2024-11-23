@@ -1,38 +1,36 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+import React from 'react';
 
-interface Props {
-  children: ReactNode;
+interface ErrorBoundaryState {
+    hasError: boolean;
+    errorMessage: string;
 }
 
-interface State {
-  hasError: boolean;
-}
-
-class ErrorBoundary extends Component<Props, State> {
-  public state: State = {
-    hasError: false
-  };
-
-  public static getDerivedStateFromError(_: Error): State {
-    return { hasError: true };
-  }
-
-  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('Uncaught error:', error, errorInfo);
-  }
-
-  public render() {
-    if (this.state.hasError) {
-      return (
-        <div className="error-page">
-          <h1>Something went wrong</h1>
-          <p>Please try again later or contact support</p>
-        </div>
-      );
+class ErrorBoundary extends React.Component<{}, ErrorBoundaryState> {
+    constructor(props: {}) {
+        super(props);
+        this.state = { hasError: false, errorMessage: '' };
     }
 
-    return this.props.children;
-  }
+    static getDerivedStateFromError(error: Error) {
+        return { hasError: true, errorMessage: error.message };
+    }
+
+    componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+        console.error('Error caught in ErrorBoundary:', error, errorInfo);
+    }
+
+    render() {
+        if (this.state.hasError) {
+            return (
+                <div className="error-page">
+                    <h1>Something went wrong.</h1>
+                    <p>{this.state.errorMessage}</p>
+                    <button onClick={() => window.location.reload()}>Reload</button>
+                </div>
+            );
+        }
+        return this.props.children;
+    }
 }
 
 export default ErrorBoundary;

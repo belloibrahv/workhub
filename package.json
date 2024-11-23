@@ -11,6 +11,9 @@
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\""
   },
   "dependencies": {
+    "@fortawesome/free-brands-svg-icons": "^6.7.1",
+    "@fortawesome/free-solid-svg-icons": "^6.7.1",
+    "@fortawesome/react-fontawesome": "^0.2.2",
     "@types/node": "^22.9.1",
     "@types/react-router-dom": "^5.3.3",
     "react": "^18.3.1",
