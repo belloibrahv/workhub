@@ -35,6 +35,7 @@ const ToolSelectionPage: React.FC = () => {
     os: ''
   });
 
+  // Function to handle configuration selection (toggle between selected and unselected)
   const handleSelect = (category: 'ram' | 'storage' | 'os', value: string) => {
     setSelectedConfig(prev => ({
       ...prev,
@@ -42,30 +43,46 @@ const ToolSelectionPage: React.FC = () => {
     }));
   };
 
+  // Submit the selected configuration
   const handleSubmit = () => {
+    const selectedConfiguration = Object.keys(CONFIGURATIONS).map(category => {
+      const selectedValue = selectedConfig[category as keyof typeof selectedConfig];
+      if (selectedValue) {
+        const config = CONFIGURATIONS[category as keyof typeof CONFIGURATIONS].find(
+          (item) => item.value === selectedValue
+        );
+        return { ...config, selectedQuantity: 1 }; // Always 1 since we're toggling the selection
+      }
+      return null;
+    }).filter(Boolean); // Remove any null values from the array
+
     if (!hubId) {
       alert('Invalid hub selection. Redirecting to home.');
       navigate('/');
       return;
     }
 
+    // Save the selected configuration to the global state (window or store)
     const currentBooking = {
       hubId,
-      configuration: selectedConfig,
-      timestamp: new Date().toISOString()
+      selectedConfiguration,
+      timestamp: new Date().toISOString(),
     };
 
     window.currentBookingInfo = currentBooking;
     window.bookingResults = currentBooking;
+
     navigate('/confirmation');
   };
 
+  // Get the label of the selected configuration option
   const getSelectedLabel = (category: 'ram' | 'storage' | 'os') => {
     const selectedValue = selectedConfig[category];
     const option = CONFIGURATIONS[category].find(opt => opt.value === selectedValue);
     return option ? option.label : 'Not Selected';
   };
 
+  // Render the configuration section (e.g., RAM, Storage, OS)
   const renderConfigSection = (title: string, options: typeof CONFIGURATIONS.ram, category: 'ram' | 'storage' | 'os') => (
     <div className="config-section">
       <h3 className="section-title">{title}</h3>

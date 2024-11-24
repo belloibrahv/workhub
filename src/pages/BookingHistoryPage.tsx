@@ -4,7 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFilter, faCalendarAlt, faCheckCircle, faTimesCircle } from '@fortawesome/free-solid-svg-icons';
 
 const BookingHistoryPage: React.FC = () => {
-  const { bookingHistory } = useBookingStore();
+  const { bookingHistory = [] } = useBookingStore(); // Default to an empty array
   const [filter, setFilter] = useState({
     hubId: 'all',
     paymentStatus: 'all',
@@ -75,43 +75,55 @@ const BookingHistoryPage: React.FC = () => {
           />
         </div>
 
-        <select name="sortOrder" value={sortOrder} onChange={(e) => setSortOrder(e.target.value as 'newest' | 'oldest')}>
+        <select
+          name="sortOrder"
+          value={sortOrder}
+          onChange={(e) => setSortOrder(e.target.value as 'newest' | 'oldest')}
+        >
           <option value="newest">Newest to Oldest</option>
           <option value="oldest">Oldest to Newest</option>
         </select>
       </div>
 
       {/* Booking List */}
-      <ul className="booking-list">
-        {filteredBookings.map((booking, index) => (
-          <li key={index} className="booking-item">
-            <div className="booking-header">
-              <h2>{booking.hubId} Hub</h2>
-              <p className="booking-date">
-                <strong>Date:</strong> {new Date(booking.timestamp).toLocaleString()}
+      {filteredBookings.length > 0 ? (
+        <ul className="booking-list">
+          {filteredBookings.map((booking, index) => (
+            <li key={index} className="booking-item">
+              <div className="booking-header">
+                <h2>{booking.hubId} Hub</h2>
+                <p className="booking-date">
+                  <strong>Date:</strong> {new Date(booking.timestamp).toLocaleString()}
+                </p>
+              </div>
+
+              <h3>Configuration</h3>
+              <ul className="configuration-list">
+                {booking.selectedConfiguration ? (
+                  booking.selectedConfiguration.map((config: any) => (
+                    <li key={config.id} className="configuration-item">
+                      <span>{config.name}</span>
+                      <span>(x{config.selectedQuantity})</span>
+                    </li>
+                  ))
+                ) : (
+                  <p>No configuration details available.</p>
+                )}
+              </ul>
+
+              <p>
+                <strong>Payment Status: </strong>
+                <span className={`payment-status ${booking.payment ? 'paid' : 'pending'}`}>
+                  <FontAwesomeIcon icon={booking.payment ? faCheckCircle : faTimesCircle} />
+                  {booking.payment ? ' Paid' : ' Pending'}
+                </span>
               </p>
-            </div>
-
-            <h3>Configuration</h3>
-            <ul className="configuration-list">
-              {booking.selectedConfiguration.map((config: any) => (
-                <li key={config.id} className="configuration-item">
-                  <span>{config.name}</span>
-                  <span>(x{config.selectedQuantity})</span>
-                </li>
-              ))}
-            </ul>
-
-            <p>
-              <strong>Payment Status: </strong>
-              <span className={booking.payment ? 'paid' : 'pending'}>
-                <FontAwesomeIcon icon={booking.payment ? faCheckCircle : faTimesCircle} />
-                {booking.payment ? 'Paid' : 'Pending'}
-              </span>
-            </p>
-          </li>
-        ))}
-      </ul>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p>No bookings found.</p>
+      )}
     </div>
   );
 };
