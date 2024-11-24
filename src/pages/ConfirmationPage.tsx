@@ -27,7 +27,7 @@ const ConfirmationPage: React.FC = () => {
     cvv: '',
   });
   const [errorMessage, setErrorMessage] = useState<string>('');
-  const [payNow, setPayNow] = useState<boolean | null>(null); // Removed the step state for simplification
+  const [payNow, setPayNow] = useState<boolean | null>(null); // Simplified state management
 
   useEffect(() => {
     const currentBooking = window.bookingResults || null;
@@ -125,24 +125,23 @@ const ConfirmationPage: React.FC = () => {
           ))}
         </ul>
 
-        <div className="pay-options">
-          <button
-            className="pay-now-btn"
-            onClick={() => setPayNow(true)}
-            style={{ display: payNow === null ? 'inline-block' : 'none' }}
-          >
-            Pay Now
-          </button>
-          <button
-            className="pay-later-btn"
-            onClick={handlePayLater}
-            style={{ display: payNow === null ? 'inline-block' : 'none' }}
-          >
-            Pay Later
-          </button>
-        </div>
-
-        {payNow !== null && (
+        {/* Pay Now / Pay Later Buttons */}
+        {payNow === null ? (
+          <div className="pay-options">
+            <button
+              className="pay-now-btn"
+              onClick={() => setPayNow(true)}
+            >
+              Pay Now
+            </button>
+            <button
+              className="pay-later-btn"
+              onClick={handlePayLater}
+            >
+              Pay Later
+            </button>
+          </div>
+        ) : (
           <form className="payment-form" onSubmit={handlePaymentSubmit}>
             <h2>Payment Details</h2>
             {errorMessage && <div className="error-message">{errorMessage}</div>}

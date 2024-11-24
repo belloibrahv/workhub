@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useBookingStore } from '../store/booking';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faFilter, faCalendarAlt, faCheckCircle, faTimesCircle } from '@fortawesome/free-solid-svg-icons';
 
 const BookingHistoryPage: React.FC = () => {
   const { bookingHistory } = useBookingStore();
@@ -33,53 +35,77 @@ const BookingHistoryPage: React.FC = () => {
   return (
     <div className="booking-history-page">
       <h1>Your Booking History</h1>
+
+      {/* Filter Bar */}
       <div className="filter-bar">
-        <select name="hubId" value={filter.hubId} onChange={handleFilterChange}>
-          <option value="all">All Hubs</option>
-          <option value="lekki">Lekki</option>
-          <option value="yaba">Yaba</option>
-          <option value="sango">Sango</option>
-        </select>
-        <select name="paymentStatus" value={filter.paymentStatus} onChange={handleFilterChange}>
-          <option value="all">All Status</option>
-          <option value="Paid">Paid</option>
-          <option value="Pending">Pending</option>
-        </select>
-        <input
-          type="date"
-          name="startDate"
-          value={filter.startDate}
-          onChange={handleFilterChange}
-          placeholder="Start Date"
-        />
-        <input
-          type="date"
-          name="endDate"
-          value={filter.endDate}
-          onChange={handleFilterChange}
-          placeholder="End Date"
-        />
+        <div className="filter-group">
+          <FontAwesomeIcon icon={faFilter} />
+          <select name="hubId" value={filter.hubId} onChange={handleFilterChange}>
+            <option value="all">All Hubs</option>
+            <option value="lekki">Lekki</option>
+            <option value="yaba">Yaba</option>
+            <option value="sango">Sango</option>
+          </select>
+        </div>
+
+        <div className="filter-group">
+          <FontAwesomeIcon icon={faCheckCircle} />
+          <select name="paymentStatus" value={filter.paymentStatus} onChange={handleFilterChange}>
+            <option value="all">All Status</option>
+            <option value="Paid">Paid</option>
+            <option value="Pending">Pending</option>
+          </select>
+        </div>
+
+        <div className="filter-group">
+          <FontAwesomeIcon icon={faCalendarAlt} />
+          <input
+            type="date"
+            name="startDate"
+            value={filter.startDate}
+            onChange={handleFilterChange}
+            placeholder="Start Date"
+          />
+          <input
+            type="date"
+            name="endDate"
+            value={filter.endDate}
+            onChange={handleFilterChange}
+            placeholder="End Date"
+          />
+        </div>
+
         <select name="sortOrder" value={sortOrder} onChange={(e) => setSortOrder(e.target.value as 'newest' | 'oldest')}>
           <option value="newest">Newest to Oldest</option>
           <option value="oldest">Oldest to Newest</option>
         </select>
       </div>
+
+      {/* Booking List */}
       <ul className="booking-list">
         {filteredBookings.map((booking, index) => (
           <li key={index} className="booking-item">
-            <h2>Hub: {booking.hubId}</h2>
-            <p><strong>Date:</strong> {new Date(booking.timestamp).toLocaleString()}</p>
-            <h3>Configuration:</h3>
-            <ul>
+            <div className="booking-header">
+              <h2>{booking.hubId} Hub</h2>
+              <p className="booking-date">
+                <strong>Date:</strong> {new Date(booking.timestamp).toLocaleString()}
+              </p>
+            </div>
+
+            <h3>Configuration</h3>
+            <ul className="configuration-list">
               {booking.selectedConfiguration.map((config: any) => (
-                <li key={config.id}>
-                  {config.name} (x{config.selectedQuantity})
+                <li key={config.id} className="configuration-item">
+                  <span>{config.name}</span>
+                  <span>(x{config.selectedQuantity})</span>
                 </li>
               ))}
             </ul>
+
             <p>
-              <strong>Payment Status:</strong>
+              <strong>Payment Status: </strong>
               <span className={booking.payment ? 'paid' : 'pending'}>
+                <FontAwesomeIcon icon={booking.payment ? faCheckCircle : faTimesCircle} />
                 {booking.payment ? 'Paid' : 'Pending'}
               </span>
             </p>
