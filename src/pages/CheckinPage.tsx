@@ -1,4 +1,3 @@
-// src/pages/CheckinPage.tsx
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 
@@ -25,12 +24,52 @@ const CheckinPage: React.FC = () => {
 
   const validateForm = () => {
     const { fullName, email, phone, age, visitDay, startHour, endHour } = formData;
-    if (!fullName || !email || !phone || !age || !visitDay || !startHour || !endHour) {
-      return 'All fields are required.';
+
+    // Full Name validation
+    if (!fullName.trim()) {
+      return 'Full Name is required.';
     }
-    if (new Date(visitDay) < new Date()) {
-      return 'Visit day cannot be in the past.';
+    if (fullName.length < 3) {
+      return 'Full Name must be at least 3 characters long.';
     }
+
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email || !emailRegex.test(email)) {
+      return 'Please enter a valid email address.';
+    }
+
+    // Phone Number validation
+    const phoneRegex = /^[0-9]{10,15}$/;
+    if (!phone || !phoneRegex.test(phone)) {
+      return 'Phone Number must be between 10 and 15 digits.';
+    }
+
+    // Age validation
+    if (!age) {
+      return 'Age range is required.';
+    }
+
+    // Visit Day validation
+    if (!visitDay) {
+      return 'Visit Day is required.';
+    }
+
+    // Start Hour validation
+    if (!startHour) {
+      return 'Start Hour is required.';
+    }
+
+    // End Hour validation
+    if (!endHour) {
+      return 'End Hour is required.';
+    }
+
+    // Time range validation
+    if (startHour >= endHour) {
+      return 'End Hour must be later than Start Hour.';
+    }
+
     return null;
   };
 
@@ -60,33 +99,82 @@ const CheckinPage: React.FC = () => {
       <form onSubmit={handleSubmit} className="checkin-form">
         <div className="form-group">
           <label>Full Name</label>
-          <input type="text" name="fullName" value={formData.fullName} onChange={handleInputChange} required />
+          <input
+            type="text"
+            name="fullName"
+            value={formData.fullName}
+            onChange={handleInputChange}
+            required
+          />
         </div>
         <div className="form-group">
           <label>Email</label>
-          <input type="email" name="email" value={formData.email} onChange={handleInputChange} required />
+          <input
+            type="email"
+            name="email"
+            value={formData.email}
+            onChange={handleInputChange}
+            required
+          />
         </div>
         <div className="form-group">
           <label>Phone Number</label>
-          <input type="tel" name="phone" value={formData.phone} onChange={handleInputChange} required />
+          <input
+            type="tel"
+            name="phone"
+            value={formData.phone}
+            onChange={handleInputChange}
+            required
+          />
         </div>
         <div className="form-group">
           <label>Age</label>
-          <input type="number" name="age" value={formData.age} onChange={handleInputChange} required />
+          <select
+            name="age"
+            value={formData.age}
+            onChange={handleInputChange}
+            required
+          >
+            <option value="">Select Age Range</option>
+            <option value="16-20">16-20</option>
+            <option value="21-25">21-25</option>
+            <option value="26-30">26-30</option>
+            <option value="31+">31 and above</option>
+          </select>
         </div>
         <div className="form-group">
           <label>Visit Day</label>
-          <input type="date" name="visitDay" value={formData.visitDay} onChange={handleInputChange} required />
+          <input
+            type="date"
+            name="visitDay"
+            value={formData.visitDay}
+            onChange={handleInputChange}
+            required
+          />
         </div>
         <div className="form-group">
           <label>Start Hour</label>
-          <input type="time" name="startHour" value={formData.startHour} onChange={handleInputChange} required />
+          <input
+            type="time"
+            name="startHour"
+            value={formData.startHour}
+            onChange={handleInputChange}
+            required
+          />
         </div>
         <div className="form-group">
           <label>End Hour</label>
-          <input type="time" name="endHour" value={formData.endHour} onChange={handleInputChange} required />
+          <input
+            type="time"
+            name="endHour"
+            value={formData.endHour}
+            onChange={handleInputChange}
+            required
+          />
         </div>
-        <button type="submit" className="submit-btn">Proceed to Tools</button>
+        <button type="submit" className="submit-btn">
+          Proceed to Tools
+        </button>
       </form>
     </div>
   );

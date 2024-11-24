@@ -1,4 +1,3 @@
-// src/pages/HubDetailPage.tsx
 import React from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Hub } from '../types/Hub';
