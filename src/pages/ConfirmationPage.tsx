@@ -131,19 +131,19 @@ const ConfirmationPage: React.FC = () => {
         <div className="configuration-section">
           <h2 className="section-title">
             <Package size={20} />
-            Selected Tools
+            Selected Configuration
           </h2>
           {bookingDetails.selectedConfiguration && bookingDetails.selectedConfiguration.length > 0 ? (
             <ul className="configuration-list">
               {bookingDetails.selectedConfiguration.map((config: any) => (
                 <li key={config.id} className="configuration-item">
-                  <span className="item-name">{config.name}</span>
-                  <span className="item-quantity">Quantity: {config.selectedQuantity}</span>
+                  <span className="item-name">{config.id}</span>
+                  <span className="item-value">{config.label}</span>
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="no-config-message">No tools selected.</p>
+            <p className="no-config-message">No configuration selected.</p>
           )}
         </div>
 

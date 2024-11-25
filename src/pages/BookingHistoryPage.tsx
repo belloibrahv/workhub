@@ -32,6 +32,24 @@ const BookingHistoryPage: React.FC = () => {
     setFilter((prev) => ({ ...prev, [name]: value }));
   };
 
+  const renderConfigurationDetails = (configurations: any[]) => {
+    if (!configurations || configurations.length === 0) {
+      return <p>No configuration details available.</p>;
+    }
+    return (
+      <table className="configuration-table">
+        <tbody>
+          {configurations.map((config) => (
+            <tr key={config.id}>
+              <td>{config.id}</td>
+              <td>{config.label}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    );
+  };
+
   return (
     <div className="booking-history-page">
       <h1>Your Booking History</h1>
@@ -97,19 +115,8 @@ const BookingHistoryPage: React.FC = () => {
                 </p>
               </div>
 
-              <h3>Configuration</h3>
-              <ul className="configuration-list">
-                {booking.selectedConfiguration ? (
-                  booking.selectedConfiguration.map((config: any) => (
-                    <li key={config.id} className="configuration-item">
-                      <span>{config.name}</span>
-                      <span>(x{config.selectedQuantity})</span>
-                    </li>
-                  ))
-                ) : (
-                  <p>No configuration details available.</p>
-                )}
-              </ul>
+              <h3>Selected Configuration</h3>
+              {renderConfigurationDetails(booking.selectedConfiguration)}
 
               <p>
                 <strong>Payment Status: </strong>
