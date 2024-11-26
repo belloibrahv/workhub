@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-
-// FontAwesome icons
+import { useBookingStore } from '../store/booking';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faMemory, faHdd, faDesktop } from '@fortawesome/free-solid-svg-icons';
 
@@ -11,50 +10,65 @@ const CONFIGURATIONS = {
     { id: 'ram-8', value: '8', label: '8GB' },
     { id: 'ram-16', value: '16', label: '16GB' },
     { id: 'ram-32', value: '32', label: '32GB' },
-    { id: 'ram-64', value: '64', label: '64GB' }
+    { id: 'ram-64', value: '64', label: '64GB' },
   ],
   storage: [
     { id: 'hdd-320', value: '320', label: '320GB' },
     { id: 'hdd-500', value: '500', label: '500GB' },
     { id: 'hdd-1000', value: '1', label: '1TB' },
-    { id: 'hdd-2000', value: '2', label: '2TB' }
+    { id: 'hdd-2000', value: '2', label: '2TB' },
   ],
   os: [
     { id: 'os-windows', value: 'windows', label: 'Windows' },
     { id: 'os-linux', value: 'linux', label: 'Linux' },
-    { id: 'os-macos', value: 'macos', label: 'MacOS' }
-  ]
+    { id: 'os-macos', value: 'macos', label: 'MacOS' },
+  ],
 };
 
 const ToolSelectionPage: React.FC = () => {
   const { hubId } = useParams<{ hubId: string }>();
   const navigate = useNavigate();
+  const { currentBooking, updateCurrentBooking, addBookingResult } = useBookingStore();
+
   const [selectedConfig, setSelectedConfig] = useState({
     ram: '',
     storage: '',
-    os: ''
+    os: '',
   });
 
-  // Function to handle configuration selection (toggle between selected and unselected)
+  // Load previously selected configurations (if available)
+  useEffect(() => {
+    if (currentBooking?.formData?.selectedTools) {
+      const previousSelection = currentBooking.formData.selectedTools.reduce((acc, tool) => {
+        acc[tool.type] = tool.value;
+        return acc;
+      }, {} as Record<string, string>);
+      setSelectedConfig(previousSelection);
+    }
+  }, [currentBooking]);
+
+  // Handle configuration selection
   const handleSelect = (category: 'ram' | 'storage' | 'os', value: string) => {
-    setSelectedConfig(prev => ({
+    setSelectedConfig((prev) => ({
       ...prev,
-      [category]: prev[category] === value ? '' : value
+      [category]: prev[category] === value ? '' : value,
     }));
   };
 
   // Submit the selected configuration
   const handleSubmit = () => {
-    const selectedConfiguration = Object.keys(CONFIGURATIONS).map(category => {
-      const selectedValue = selectedConfig[category as keyof typeof selectedConfig];
-      if (selectedValue) {
-        const config = CONFIGURATIONS[category as keyof typeof CONFIGURATIONS].find(
-          (item) => item.value === selectedValue
-        );
-        return { ...config, selectedQuantity: 1 }; // Always 1 since we're toggling the selection
-      }
-      return null;
-    }).filter(Boolean); // Remove any null values from the array
+    const selectedConfiguration = Object.keys(CONFIGURATIONS)
+      .map((category) => {
+        const selectedValue = selectedConfig[category as keyof typeof selectedConfig];
+        if (selectedValue) {
+          const config = CONFIGURATIONS[category as keyof typeof CONFIGURATIONS].find(
+            (item) => item.value === selectedValue
+          );
+          return { id: config?.id, type: category, label: config?.label, value: selectedValue };
+        }
+        return null;
+      })
+      .filter(Boolean);
 
     if (!hubId) {
       alert('Invalid hub selection. Redirecting to home.');
@@ -62,15 +76,22 @@ const ToolSelectionPage: React.FC = () => {
       return;
     }
 
-    // Save the selected configuration to the global state (window or store)
-    const currentBooking = {
-      hubId,
-      selectedConfiguration,
-      timestamp: new Date().toISOString(),
+    const updatedBooking = {
+      ...currentBooking,
+      formData: {
+        ...currentBooking.formData,
+        selectedTools: selectedConfiguration,
+      },
+      currentStep: 'confirmation',
+      isInFinalPage: false,
     };
 
-    window.currentBookingInfo = currentBooking;
-    window.bookingResults = currentBooking;
+    // Save the booking to global state and localStorage
+    updateCurrentBooking(updatedBooking);
+    addBookingResult(updatedBooking);
+
+    // Update the global variable for browser debugging
+    window.currentBookingInfo = updatedBooking;
 
     navigate('/confirmation');
   };
@@ -78,16 +99,16 @@ const ToolSelectionPage: React.FC = () => {
   // Get the label of the selected configuration option
   const getSelectedLabel = (category: 'ram' | 'storage' | 'os') => {
     const selectedValue = selectedConfig[category];
-    const option = CONFIGURATIONS[category].find(opt => opt.value === selectedValue);
+    const option = CONFIGURATIONS[category].find((opt) => opt.value === selectedValue);
     return option ? option.label : 'Not Selected';
   };
 
-  // Render the configuration section (e.g., RAM, Storage, OS)
+  // Render configuration sections
   const renderConfigSection = (title: string, options: typeof CONFIGURATIONS.ram, category: 'ram' | 'storage' | 'os') => (
     <div className="config-section">
       <h3 className="section-title">{title}</h3>
       <div className="options-grid">
-        {options.map(option => (
+        {options.map((option) => (
           <button
             key={option.id}
             onClick={() => handleSelect(category, option.value)}
@@ -132,7 +153,7 @@ const ToolSelectionPage: React.FC = () => {
               </div>
             </div>
             <div className="preview-summary">
-              {Object.values(selectedConfig).every(value => value) ? (
+              {Object.values(selectedConfig).every((value) => value) ? (
                 <div className="complete-message">Configuration Complete!</div>
               ) : (
                 <div className="incomplete-message">
@@ -146,7 +167,6 @@ const ToolSelectionPage: React.FC = () => {
           {renderConfigSection('RAM', CONFIGURATIONS.ram, 'ram')}
           {renderConfigSection('Storage', CONFIGURATIONS.storage, 'storage')}
           {renderConfigSection('Operating System', CONFIGURATIONS.os, 'os')}
-          
           <button
             onClick={handleSubmit}
             disabled={!selectedConfig.ram || !selectedConfig.storage || !selectedConfig.os}

@@ -1,9 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useBookingStore } from '../store/booking';
 
 const CheckinPage: React.FC = () => {
   const { hubId } = useParams<{ hubId: string }>();
   const navigate = useNavigate();
+
+  const { currentBooking, updateCurrentBooking, addBookingResult } = useBookingStore();
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -17,6 +20,16 @@ const CheckinPage: React.FC = () => {
 
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    // Prepopulate the form if user details already exist
+    if (currentBooking?.formData?.userDetails) {
+      setFormData({
+        ...formData,
+        ...currentBooking.formData.userDetails,
+      });
+    }
+  }, [currentBooking]);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -25,50 +38,17 @@ const CheckinPage: React.FC = () => {
   const validateForm = () => {
     const { fullName, email, phone, age, visitDay, startHour, endHour } = formData;
 
-    // Full Name validation
-    if (!fullName.trim()) {
-      return 'Full Name is required.';
-    }
-    if (fullName.length < 3) {
-      return 'Full Name must be at least 3 characters long.';
-    }
-
-    // Email validation
+    if (!fullName.trim()) return 'Full Name is required.';
+    if (fullName.length < 3) return 'Full Name must be at least 3 characters long.';
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!email || !emailRegex.test(email)) {
-      return 'Please enter a valid email address.';
-    }
-
-    // Phone Number validation
+    if (!email || !emailRegex.test(email)) return 'Please enter a valid email address.';
     const phoneRegex = /^[0-9]{10,15}$/;
-    if (!phone || !phoneRegex.test(phone)) {
-      return 'Phone Number must be between 10 and 15 digits.';
-    }
-
-    // Age validation
-    if (!age) {
-      return 'Age range is required.';
-    }
-
-    // Visit Day validation
-    if (!visitDay) {
-      return 'Visit Day is required.';
-    }
-
-    // Start Hour validation
-    if (!startHour) {
-      return 'Start Hour is required.';
-    }
-
-    // End Hour validation
-    if (!endHour) {
-      return 'End Hour is required.';
-    }
-
-    // Time range validation
-    if (startHour >= endHour) {
-      return 'End Hour must be later than Start Hour.';
-    }
+    if (!phone || !phoneRegex.test(phone)) return 'Phone Number must be between 10 and 15 digits.';
+    if (!age) return 'Age range is required.';
+    if (!visitDay) return 'Visit Day is required.';
+    if (!startHour) return 'Start Hour is required.';
+    if (!endHour) return 'End Hour is required.';
+    if (startHour >= endHour) return 'End Hour must be later than Start Hour.';
 
     return null;
   };
@@ -82,12 +62,36 @@ const CheckinPage: React.FC = () => {
     }
     setError(null);
 
-    // Save booking information to global variable for later use
-    window.currentBookingInfo = {
+    const userDetails = {
+      fullName: formData.fullName,
+      email: formData.email,
+      phone: formData.phone,
+      age: formData.age,
+    };
+
+    const bookingDetails = {
       hubId,
-      userDetails: formData,
+      userDetails,
+      visitDay: formData.visitDay,
+      startHour: formData.startHour,
+      endHour: formData.endHour,
+      timestamp: new Date().toISOString(),
+      status: 'in_progress',
       isInFinalPage: false,
     };
+
+    // Update the global state
+    updateCurrentBooking({
+      formData: { userDetails, ...bookingDetails },
+      currentStep: 'tools',
+      isInFinalPage: false,
+    });
+
+    // Save the booking to bookingHistory and localStorage
+    addBookingResult(bookingDetails);
+
+    // Update the global variable for browser testing
+    window.currentBookingInfo = bookingDetails;
 
     navigate(`/tools/${hubId}`);
   };

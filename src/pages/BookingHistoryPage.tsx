@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useBookingStore } from '../store/booking';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFilter, faCalendarAlt, faCheckCircle, faTimesCircle } from '@fortawesome/free-solid-svg-icons';
 
 const BookingHistoryPage: React.FC = () => {
-  const { bookingHistory = [] } = useBookingStore(); // Default to an empty array
+  const { bookingHistory } = useBookingStore(); // Fetch bookings from zustand store
   const [filter, setFilter] = useState({
     hubId: 'all',
     paymentStatus: 'all',
@@ -12,6 +12,11 @@ const BookingHistoryPage: React.FC = () => {
     endDate: '',
   });
   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
+
+  // Populate global variable for browser testing
+  useEffect(() => {
+    window.bookingResults = bookingHistory || [];
+  }, [bookingHistory]);
 
   const filteredBookings = bookingHistory
     .filter((booking) => {
@@ -32,21 +37,23 @@ const BookingHistoryPage: React.FC = () => {
     setFilter((prev) => ({ ...prev, [name]: value }));
   };
 
+  // Refactor to display configuration in the key-value format
   const renderConfigurationDetails = (configurations: any[]) => {
     if (!configurations || configurations.length === 0) {
       return <p>No configuration details available.</p>;
     }
+
+    const formattedConfig = configurations.reduce((acc, config) => {
+      acc[config.type] = config.label;
+      return acc;
+    }, {} as Record<string, string>);
+
     return (
-      <table className="configuration-table">
-        <tbody>
-          {configurations.map((config) => (
-            <tr key={config.id}>
-              <td>{config.id}</td>
-              <td>{config.label}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <div className="formatted-configuration">
+        <p><strong>RAM:</strong> <span>{formattedConfig.ram || 'Not Selected'}</span></p>
+        <p><strong>Storage:</strong> <span>{formattedConfig.storage || 'Not Selected'}</span></p>
+        <p><strong>Operating System:</strong> <span>{formattedConfig.os || 'Not Selected'}</span></p>
+      </div>
     );
   };
 
@@ -116,7 +123,7 @@ const BookingHistoryPage: React.FC = () => {
               </div>
 
               <h3>Selected Configuration</h3>
-              {renderConfigurationDetails(booking.selectedConfiguration)}
+              {renderConfigurationDetails(booking.selectedTools)}
 
               <p>
                 <strong>Payment Status: </strong>

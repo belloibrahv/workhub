@@ -28,7 +28,7 @@ const validateCardNumber = (cardNumber: string) => {
 
 const ConfirmationPage: React.FC = () => {
   const navigate = useNavigate();
-  const { addBookingResult } = useBookingStore();
+  const { currentBooking, updateCurrentBooking, addBookingResult } = useBookingStore();
   const [bookingDetails, setBookingDetails] = useState<any>(null);
   const [paymentDetails, setPaymentDetails] = useState({
     cardNumber: '',
@@ -39,14 +39,16 @@ const ConfirmationPage: React.FC = () => {
   const [payNow, setPayNow] = useState<boolean | null>(null);
 
   useEffect(() => {
-    const currentBooking = window.bookingResults || null;
-    if (!currentBooking || !currentBooking.hubId) {
+    if (!currentBooking?.formData?.hubId) {
       alert('No booking details found. Redirecting to home.');
       navigate('/');
-    } else {
-      setBookingDetails(currentBooking);
+      return;
     }
-  }, [navigate]);
+    setBookingDetails(currentBooking.formData);
+
+    // Ensure window.bookingResults contains the current list of bookings
+    window.bookingResults = currentBooking.bookingHistory || [];
+  }, [currentBooking, navigate]);
 
   const handlePaymentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -75,18 +77,25 @@ const ConfirmationPage: React.FC = () => {
     }
 
     const updatedBooking = {
-      ...bookingDetails,
-      payment: {
-        ...paymentDetails,
-        payNow: true,
+      ...currentBooking,
+      formData: {
+        ...currentBooking.formData,
+        payment: {
+          ...paymentDetails,
+          payNow: true,
+        },
       },
       status: 'confirmed',
       timestamp: new Date().toISOString(),
+      isInFinalPage: true,
     };
 
-    window.currentBookingInfo = updatedBooking;
-    window.bookingResults = updatedBooking;
+    // Update the global state and window.bookingResults
+    updateCurrentBooking(updatedBooking);
     addBookingResult(updatedBooking);
+
+    // Update the global variable for testing
+    window.currentBookingInfo = updatedBooking;
 
     alert('Payment successful! Booking confirmed.');
     navigate('/history');
@@ -94,18 +103,40 @@ const ConfirmationPage: React.FC = () => {
 
   const handlePayLater = () => {
     const updatedBooking = {
-      ...bookingDetails,
-      payment: null,
+      ...currentBooking,
+      formData: {
+        ...currentBooking.formData,
+        payment: null,
+      },
       status: 'pending',
       timestamp: new Date().toISOString(),
+      isInFinalPage: true,
     };
 
-    window.currentBookingInfo = updatedBooking;
-    window.bookingResults = updatedBooking;
+    // Update the global state and window.bookingResults
+    updateCurrentBooking(updatedBooking);
     addBookingResult(updatedBooking);
+
+    // Update the global variable for testing
+    window.currentBookingInfo = updatedBooking;
 
     alert('Booking saved as pending. You can pay later.');
     navigate('/history');
+  };
+
+  const renderConfigurationDetails = (configurations: any[]) => {
+    const formattedConfig = configurations.reduce((acc, config) => {
+      acc[config.type] = config.label;
+      return acc;
+    }, {} as Record<string, string>);
+
+    return (
+      <div className="formatted-configuration">
+        <p><strong>RAM:</strong> <span>{formattedConfig.ram || 'Not Selected'}</span></p>
+        <p><strong>Storage:</strong> <span>{formattedConfig.storage || 'Not Selected'}</span></p>
+        <p><strong>Operating System:</strong> <span>{formattedConfig.os || 'Not Selected'}</span></p>
+      </div>
+    );
   };
 
   if (!bookingDetails) {
@@ -133,15 +164,8 @@ const ConfirmationPage: React.FC = () => {
             <Package size={20} />
             Selected Configuration
           </h2>
-          {bookingDetails.selectedConfiguration && bookingDetails.selectedConfiguration.length > 0 ? (
-            <ul className="configuration-list">
-              {bookingDetails.selectedConfiguration.map((config: any) => (
-                <li key={config.id} className="configuration-item">
-                  <span className="item-name">{config.id}</span>
-                  <span className="item-value">{config.label}</span>
-                </li>
-              ))}
-            </ul>
+          {bookingDetails.selectedTools && bookingDetails.selectedTools.length > 0 ? (
+            renderConfigurationDetails(bookingDetails.selectedTools)
           ) : (
             <p className="no-config-message">No configuration selected.</p>
           )}
@@ -149,17 +173,11 @@ const ConfirmationPage: React.FC = () => {
 
         {payNow === null ? (
           <div className="pay-options">
-            <button
-              className="pay-now-btn"
-              onClick={() => setPayNow(true)}
-            >
+            <button className="pay-now-btn" onClick={() => setPayNow(true)}>
               <PaymentIcon size={20} />
               Pay Now
             </button>
-            <button
-              className="pay-later-btn"
-              onClick={handlePayLater}
-            >
+            <button className="pay-later-btn" onClick={handlePayLater}>
               <Clock size={20} />
               Pay Later
             </button>
@@ -170,9 +188,7 @@ const ConfirmationPage: React.FC = () => {
               <CreditCard size={20} />
               Payment Details
             </h2>
-            {errorMessage && (
-              <div className="error-message">{errorMessage}</div>
-            )}
+            {errorMessage && <div className="error-message">{errorMessage}</div>}
             <div className="form-group">
               <label className="form-label">
                 <CreditCard size={16} />
