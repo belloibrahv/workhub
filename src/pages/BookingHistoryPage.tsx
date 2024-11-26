@@ -22,9 +22,16 @@ const BookingHistoryPage: React.FC = () => {
         email: booking.formData?.userDetails?.email || '',
       },
       configuration: {
-        RAM: booking.formData?.selectedTools?.find(tool => tool.type === 'ram' || tool.type.includes('ram'))?.label || '4GB',
-        Storage: booking.formData?.selectedTools?.find(tool => tool.type === 'storage' || tool.type.includes('hdd'))?.label || '500GB',
-        'Operating system': booking.formData?.selectedTools?.find(tool => tool.type === 'os' || tool.type.includes('os'))?.label || 'Windows',
+        RAM: booking.formData?.selectedTools?.find(tool => 
+          tool.type.toLowerCase().includes('ram')
+        )?.label || '4GB',
+        Storage: booking.formData?.selectedTools?.find(tool => 
+          tool.type.toLowerCase().includes('storage') || 
+          tool.type.toLowerCase().includes('hdd')
+        )?.label || '500GB',
+        'Operating system': booking.formData?.selectedTools?.find(tool => 
+          tool.type.toLowerCase().includes('os')
+        )?.label || 'Windows',
       },
       PaymentMethod: {
         payNow: booking.formData?.payment?.payNow || false,
@@ -37,21 +44,26 @@ const BookingHistoryPage: React.FC = () => {
       },
       IsFinalPage: booking.isInFinalPage || false,
     }));
-    
+
   }, [bookingHistory]);
   const filteredBookings = bookingHistory
-    .filter((booking) => {
-      if (filter.hubId !== 'all' && booking.hubId !== filter.hubId) return false;
-      if (filter.paymentStatus !== 'all' && Boolean(booking.payment) !== (filter.paymentStatus === 'Paid')) return false;
-      if (filter.startDate && new Date(booking.timestamp) < new Date(filter.startDate)) return false;
-      if (filter.endDate && new Date(booking.timestamp) > new Date(filter.endDate)) return false;
-      return true;
-    })
-    .sort((a, b) => {
-      const dateA = new Date(a.timestamp);
-      const dateB = new Date(b.timestamp);
-      return sortOrder === 'newest' ? dateB.getTime() - dateA.getTime() : dateA.getTime() - dateB.getTime();
-    });
+  .filter((booking) => {
+    if (filter.hubId !== 'all' && booking.hubId !== filter.hubId) return false;
+    if (filter.paymentStatus !== 'all' && Boolean(booking.payment) !== (filter.paymentStatus === 'Paid')) return false;
+    if (filter.startDate && new Date(booking.timestamp) < new Date(filter.startDate)) return false;
+    if (filter.endDate && new Date(booking.timestamp) > new Date(filter.endDate)) return false;
+    return true;
+  })
+  .map((booking) => ({
+    ...booking,
+    selectedTools: booking.formData?.selectedTools || [], // Ensure tools are included
+  }))
+  .sort((a, b) => {
+    const dateA = new Date(a.timestamp);
+    const dateB = new Date(b.timestamp);
+    return sortOrder === 'newest' ? dateB.getTime() - dateA.getTime() : dateA.getTime() - dateB.getTime();
+  });
+
 
   const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -59,20 +71,20 @@ const BookingHistoryPage: React.FC = () => {
   };
 
   // Refactor to display configuration in the key-value format
-  const renderConfigurationDetails = (configurations: any[]) => {
+  const renderConfigurationDetails = (configurations: any[] = []) => {
     if (!configurations || configurations.length === 0) {
       return <p>No configuration details available.</p>;
     }
   
-    // Create a map to easily lookup configurations
     const configMap = configurations.reduce((acc, config) => {
-      // Normalize the type to match our expected types
-      let type = config.type;
-      if (type.includes('ram')) type = 'ram';
-      if (type.includes('hdd')) type = 'storage';
-      if (type.includes('os')) type = 'os';
-  
-      acc[type] = config.label;
+      const type = config.type.toLowerCase();
+      if (type.includes('ram')) {
+        acc.ram = config.label || 'Default RAM';
+      } else if (type.includes('storage') || type.includes('hdd')) {
+        acc.storage = config.label || 'Default Storage';
+      } else if (type.includes('os')) {
+        acc.os = config.label || 'Default OS';
+      }
       return acc;
     }, {} as Record<string, string>);
   
@@ -83,7 +95,7 @@ const BookingHistoryPage: React.FC = () => {
         <p><strong>Operating System:</strong> <span>{configMap.os || 'Not Selected'}</span></p>
       </div>
     );
-  }; 
+  };  
 
   return (
     <div className="booking-history-page">

@@ -80,17 +80,16 @@ const ConfirmationPage: React.FC = () => {
       ...currentBooking,
       formData: {
         ...currentBooking.formData,
+        selectedTools: currentBooking.formData?.selectedTools || [], // Ensure tools are stored
         payment: {
           ...paymentDetails,
           payNow: true,
         },
-        // Only store confirmed tools
-        selectedTools: currentBooking.formData.selectedTools || [],
       },
       status: 'confirmed',
       timestamp: new Date().toISOString(),
       isInFinalPage: true,
-    };
+    }; 
   
     // Update the global state and window.bookingResults
     updateCurrentBooking(updatedBooking);
@@ -103,9 +102,15 @@ const ConfirmationPage: React.FC = () => {
         email: booking.formData?.userDetails?.email || '',
       },
       configuration: {
-        RAM: booking.formData?.selectedTools?.find(tool => tool.type === 'ram')?.label || '',
-        Storage: booking.formData?.selectedTools?.find(tool => tool.type === 'storage')?.label || '',
-        'Operating system': booking.formData?.selectedTools?.find(tool => tool.type === 'os')?.label || '',
+        RAM: booking.formData?.selectedTools?.find(tool =>
+          tool.type.toLowerCase().includes('ram'))?.label || '',
+        Storage: booking.formData?.selectedTools?.find(tool => 
+          tool.type.toLowerCase().includes('storage') || 
+          tool.type.toLowerCase().includes('hdd')
+        )?.label || '',
+        'Operating system': booking.formData?.selectedTools?.find(tool => 
+          tool.type.toLowerCase().includes('os')
+        )?.label || '',
       },
       PaymentMethod: {
         payNow: booking.formData?.payment?.payNow || false,
@@ -213,20 +218,31 @@ const ConfirmationPage: React.FC = () => {
     navigate('/history');
   };
 
-  const renderConfigurationDetails = (configurations: any[]) => {
-    const formattedConfig = configurations.reduce((acc, config) => {
-      acc[config.type] = config.label;
-      return acc;
-    }, {} as Record<string, string>);
-
-    return (
-      <div className="formatted-configuration">
-        <p><strong>RAM:</strong> <span>{formattedConfig.ram || 'Not Selected'}</span></p>
-        <p><strong>Storage:</strong> <span>{formattedConfig.storage || 'Not Selected'}</span></p>
-        <p><strong>Operating System:</strong> <span>{formattedConfig.os || 'Not Selected'}</span></p>
-      </div>
-    );
-  };
+  const renderConfigurationDetails = (configurations: any[] = []) => {
+      if (!configurations || configurations.length === 0) {
+        return <p>No configuration details available.</p>;
+      }
+    
+      const configMap = configurations.reduce((acc, config) => {
+        const type = config.type.toLowerCase();
+        if (type.includes('ram')) {
+          acc.ram = config.label || 'Default RAM';
+        } else if (type.includes('storage') || type.includes('hdd')) {
+          acc.storage = config.label || 'Default Storage';
+        } else if (type.includes('os')) {
+          acc.os = config.label || 'Default OS';
+        }
+        return acc;
+      }, {} as Record<string, string>);
+    
+      return (
+        <div className="formatted-configuration">
+          <p><strong>RAM:</strong> <span>{configMap.ram || 'Not Selected'}</span></p>
+          <p><strong>Storage:</strong> <span>{configMap.storage || 'Not Selected'}</span></p>
+          <p><strong>Operating System:</strong> <span>{configMap.os || 'Not Selected'}</span></p>
+        </div>
+      );
+    };
 
   if (!bookingDetails) {
     return (
