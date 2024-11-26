@@ -67,14 +67,14 @@ const CheckinPage: React.FC = () => {
       email: formData.email,
       phone: formData.phone,
       age: formData.age,
+      visitDay: formData.visitDay,
+      startHour: formData.startHour,
+      endHour: formData.endHour,
     };
 
     const bookingDetails = {
       hubId,
       userDetails,
-      visitDay: formData.visitDay,
-      startHour: formData.startHour,
-      endHour: formData.endHour,
       timestamp: new Date().toISOString(),
       status: 'in_progress',
       isInFinalPage: false,
@@ -82,7 +82,7 @@ const CheckinPage: React.FC = () => {
 
     // Update the global state
     updateCurrentBooking({
-      formData: { userDetails, ...bookingDetails },
+      formData: bookingDetails,
       currentStep: 'tools',
       isInFinalPage: false,
     });

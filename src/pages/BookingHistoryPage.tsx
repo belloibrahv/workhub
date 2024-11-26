@@ -13,13 +13,16 @@ const BookingHistoryPage: React.FC = () => {
   });
   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
 
-  // Populate global variable for browser testing
   useEffect(() => {
-    // Populate global variable for browser testing
     window.bookingResults = bookingHistory.map(booking => ({
       user: {
         name: booking.formData?.userDetails?.fullName || '',
         email: booking.formData?.userDetails?.email || '',
+        phone: booking.formData?.userDetails?.phone || '',
+        age: booking.formData?.userDetails?.age || '',
+        visitDay: booking.formData?.userDetails?.visitDay || '',
+        startHour: booking.formData?.userDetails?.startHour || '', 
+        endHour: booking.formData?.userDetails?.endHour || '',
       },
       configuration: {
         RAM: booking.formData?.selectedTools?.find(tool => 
@@ -42,10 +45,10 @@ const BookingHistoryPage: React.FC = () => {
         'expiry date': booking.formData?.payment?.expiryDate || '',
         cvv: booking.formData?.payment?.cvv || '',
       },
-      IsFinalPage: booking.isInFinalPage || false,
     }));
-
   }, [bookingHistory]);
+
+  
   const filteredBookings = bookingHistory
   .filter((booking) => {
     if (filter.hubId !== 'all' && booking.hubId !== filter.hubId) return false;
