@@ -156,28 +156,37 @@ const BookingHistoryPage: React.FC = () => {
       {/* Booking List */}
       {filteredBookings.length > 0 ? (
         <ul className="booking-list">
-          {filteredBookings.map((booking, index) => (
-            <li key={index} className="booking-item">
-              <div className="booking-header">
-                <h2>{booking.hubId} Hub</h2>
-                <p className="booking-date">
-                  <strong>Date:</strong> {new Date(booking.timestamp).toLocaleString()}
-                </p>
-              </div>
-
-              <h3>Selected Configuration</h3>
-              {renderConfigurationDetails(booking.selectedTools)}
-
-              <p>
-                <strong>Payment Status: </strong>
-                <span className={`payment-status ${booking.payment ? 'paid' : 'pending'}`}>
-                  <FontAwesomeIcon icon={booking.payment ? faCheckCircle : faTimesCircle} />
-                  {booking.payment ? ' Paid' : ' Pending'}
-                </span>
+        {filteredBookings.map((booking, index) => (
+          <li key={index} className="booking-item">
+            <div className="booking-header">
+              <h2>{booking.hubId} Hub</h2>
+              <p className="booking-date">
+                <strong>Date:</strong> {new Date(booking.timestamp).toLocaleString()}
               </p>
-            </li>
-          ))}
-        </ul>
+            </div>
+      
+            <h3>User Details</h3>
+            <p><strong>Name:</strong> {booking.formData?.userDetails?.fullName || 'N/A'}</p>
+            <p><strong>Email:</strong> {booking.formData?.userDetails?.email || 'N/A'}</p>
+            <p><strong>Phone:</strong> {booking.formData?.userDetails?.phone || 'N/A'}</p>
+            <p><strong>Visit Day:</strong> {booking.formData?.userDetails?.visitDay || 'N/A'}</p>
+            <p><strong>Start Hour:</strong> {booking.formData?.userDetails?.startHour || 'N/A'}</p>
+            <p><strong>End Hour:</strong> {booking.formData?.userDetails?.endHour || 'N/A'}</p>
+      
+            <h3>Selected Configuration</h3>
+            {renderConfigurationDetails(booking.selectedTools)}
+      
+            <p>
+              <strong>Payment Status: </strong>
+              <span className={`payment-status ${booking.payment ? 'paid' : 'pending'}`}>
+                <FontAwesomeIcon icon={booking.payment ? faCheckCircle : faTimesCircle} />
+                {booking.payment ? ' Paid' : ' Pending'}
+              </span>
+            </p>
+          </li>
+        ))}
+      </ul>
+      
       ) : (
         <p>No bookings found.</p>
       )}
