@@ -15,9 +15,30 @@ const BookingHistoryPage: React.FC = () => {
 
   // Populate global variable for browser testing
   useEffect(() => {
-    window.bookingResults = bookingHistory || [];
+    // Populate global variable for browser testing
+    window.bookingResults = bookingHistory.map(booking => ({
+      user: {
+        name: booking.formData?.userDetails?.fullName || '',
+        email: booking.formData?.userDetails?.email || '',
+      },
+      configuration: {
+        RAM: booking.formData?.selectedTools?.find(tool => tool.type === 'ram' || tool.type.includes('ram'))?.label || '4GB',
+        Storage: booking.formData?.selectedTools?.find(tool => tool.type === 'storage' || tool.type.includes('hdd'))?.label || '500GB',
+        'Operating system': booking.formData?.selectedTools?.find(tool => tool.type === 'os' || tool.type.includes('os'))?.label || 'Windows',
+      },
+      PaymentMethod: {
+        payNow: booking.formData?.payment?.payNow || false,
+        payLater: !booking.formData?.payment?.payNow || false,
+      },
+      PaymentDetails: {
+        'card number': booking.formData?.payment?.cardNumber || '',
+        'expiry date': booking.formData?.payment?.expiryDate || '',
+        cvv: booking.formData?.payment?.cvv || '',
+      },
+      IsFinalPage: booking.isInFinalPage || false,
+    }));
+    
   }, [bookingHistory]);
-
   const filteredBookings = bookingHistory
     .filter((booking) => {
       if (filter.hubId !== 'all' && booking.hubId !== filter.hubId) return false;
@@ -42,20 +63,27 @@ const BookingHistoryPage: React.FC = () => {
     if (!configurations || configurations.length === 0) {
       return <p>No configuration details available.</p>;
     }
-
-    const formattedConfig = configurations.reduce((acc, config) => {
-      acc[config.type] = config.label;
+  
+    // Create a map to easily lookup configurations
+    const configMap = configurations.reduce((acc, config) => {
+      // Normalize the type to match our expected types
+      let type = config.type;
+      if (type.includes('ram')) type = 'ram';
+      if (type.includes('hdd')) type = 'storage';
+      if (type.includes('os')) type = 'os';
+  
+      acc[type] = config.label;
       return acc;
     }, {} as Record<string, string>);
-
+  
     return (
       <div className="formatted-configuration">
-        <p><strong>RAM:</strong> <span>{formattedConfig.ram || 'Not Selected'}</span></p>
-        <p><strong>Storage:</strong> <span>{formattedConfig.storage || 'Not Selected'}</span></p>
-        <p><strong>Operating System:</strong> <span>{formattedConfig.os || 'Not Selected'}</span></p>
+        <p><strong>RAM:</strong> <span>{configMap.ram || 'Not Selected'}</span></p>
+        <p><strong>Storage:</strong> <span>{configMap.storage || 'Not Selected'}</span></p>
+        <p><strong>Operating System:</strong> <span>{configMap.os || 'Not Selected'}</span></p>
       </div>
     );
-  };
+  }; 
 
   return (
     <div className="booking-history-page">

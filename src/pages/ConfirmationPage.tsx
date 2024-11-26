@@ -58,24 +58,24 @@ const ConfirmationPage: React.FC = () => {
   const handlePaymentSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
-
+  
     if (!validateCardNumber(paymentDetails.cardNumber)) {
       setErrorMessage('Invalid card number.');
       return;
     }
-
+  
     const expiryDate = new Date(paymentDetails.expiryDate);
     const today = new Date();
     if (expiryDate < today) {
       setErrorMessage('Card has expired.');
       return;
     }
-
+  
     if (!/^\d{3}$/.test(paymentDetails.cvv)) {
       setErrorMessage('Invalid CVV.');
       return;
     }
-
+  
     const updatedBooking = {
       ...currentBooking,
       formData: {
@@ -84,19 +84,63 @@ const ConfirmationPage: React.FC = () => {
           ...paymentDetails,
           payNow: true,
         },
+        // Only store confirmed tools
+        selectedTools: currentBooking.formData.selectedTools || [],
       },
       status: 'confirmed',
       timestamp: new Date().toISOString(),
       isInFinalPage: true,
     };
-
+  
     // Update the global state and window.bookingResults
     updateCurrentBooking(updatedBooking);
     addBookingResult(updatedBooking);
-
-    // Update the global variable for testing
-    window.currentBookingInfo = updatedBooking;
-
+  
+    // Update the global variable for testing with specific structure
+    window.bookingResults = (window.bookingResults || []).map(booking => ({
+      user: {
+        name: booking.formData?.userDetails?.fullName || '',
+        email: booking.formData?.userDetails?.email || '',
+      },
+      configuration: {
+        RAM: booking.formData?.selectedTools?.find(tool => tool.type === 'ram')?.label || '',
+        Storage: booking.formData?.selectedTools?.find(tool => tool.type === 'storage')?.label || '',
+        'Operating system': booking.formData?.selectedTools?.find(tool => tool.type === 'os')?.label || '',
+      },
+      PaymentMethod: {
+        payNow: booking.formData?.payment?.payNow || false,
+        payLater: !booking.formData?.payment?.payNow || false,
+      },
+      PaymentDetails: {
+        'card number': booking.formData?.payment?.cardNumber || '',
+        'expiry date': booking.formData?.payment?.expiryDate || '',
+        cvv: booking.formData?.payment?.cvv || '',
+      },
+      IsFinalPage: booking.isInFinalPage || false,
+    }));
+  
+    window.currentBookingInfo = {
+      user: {
+        name: updatedBooking.formData?.userDetails?.fullName || '',
+        email: updatedBooking.formData?.userDetails?.email || '',
+      },
+      configuration: {
+        RAM: updatedBooking.formData?.selectedTools?.find(tool => tool.type === 'ram')?.label || '',
+        Storage: updatedBooking.formData?.selectedTools?.find(tool => tool.type === 'storage')?.label || '',
+        'Operating system': updatedBooking.formData?.selectedTools?.find(tool => tool.type === 'os')?.label || '',
+      },
+      PaymentMethod: {
+        payNow: updatedBooking.formData?.payment?.payNow || false,
+        payLater: !updatedBooking.formData?.payment?.payNow || false,
+      },
+      PaymentDetails: {
+        'card number': updatedBooking.formData?.payment?.cardNumber || '',
+        'expiry date': updatedBooking.formData?.payment?.expiryDate || '',
+        cvv: updatedBooking.formData?.payment?.cvv || '',
+      },
+      IsFinalPage: updatedBooking.isInFinalPage || false,
+    };
+  
     alert('Payment successful! Booking confirmed.');
     navigate('/history');
   };
@@ -107,19 +151,64 @@ const ConfirmationPage: React.FC = () => {
       formData: {
         ...currentBooking.formData,
         payment: null,
+        // Only store confirmed tools
+        selectedTools: currentBooking.formData.selectedTools || [],
       },
       status: 'pending',
       timestamp: new Date().toISOString(),
       isInFinalPage: true,
     };
-
+  
     // Update the global state and window.bookingResults
     updateCurrentBooking(updatedBooking);
     addBookingResult(updatedBooking);
-
-    // Update the global variable for testing
-    window.currentBookingInfo = updatedBooking;
-
+  
+    // Update the global variable for testing with specific structure
+    // Similar to handlePaymentSubmit logic
+    window.bookingResults = (window.bookingResults || []).map(booking => ({
+      user: {
+        name: booking.formData?.userDetails?.fullName || '',
+        email: booking.formData?.userDetails?.email || '',
+      },
+      configuration: {
+        RAM: booking.formData?.selectedTools?.find(tool => tool.type === 'ram')?.label || '',
+        Storage: booking.formData?.selectedTools?.find(tool => tool.type === 'storage')?.label || '',
+        'Operating system': booking.formData?.selectedTools?.find(tool => tool.type === 'os')?.label || '',
+      },
+      PaymentMethod: {
+        payNow: false,
+        payLater: true,
+      },
+      PaymentDetails: {
+        'card number': '',
+        'expiry date': '',
+        cvv: '',
+      },
+      IsFinalPage: booking.isInFinalPage || false,
+    }));
+  
+    window.currentBookingInfo = {
+      user: {
+        name: updatedBooking.formData?.userDetails?.fullName || '',
+        email: updatedBooking.formData?.userDetails?.email || '',
+      },
+      configuration: {
+        RAM: updatedBooking.formData?.selectedTools?.find(tool => tool.type === 'ram')?.label || '',
+        Storage: updatedBooking.formData?.selectedTools?.find(tool => tool.type === 'storage')?.label || '',
+        'Operating system': updatedBooking.formData?.selectedTools?.find(tool => tool.type === 'os')?.label || '',
+      },
+      PaymentMethod: {
+        payNow: false,
+        payLater: true,
+      },
+      PaymentDetails: {
+        'card number': '',
+        'expiry date': '',
+        cvv: '',
+      },
+      IsFinalPage: updatedBooking.isInFinalPage || false,
+    };
+  
     alert('Booking saved as pending. You can pay later.');
     navigate('/history');
   };

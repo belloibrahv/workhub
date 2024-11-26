@@ -57,25 +57,22 @@ const ToolSelectionPage: React.FC = () => {
 
   // Submit the selected configuration
   const handleSubmit = () => {
-    const selectedConfiguration = Object.keys(CONFIGURATIONS)
-      .map((category) => {
-        const selectedValue = selectedConfig[category as keyof typeof selectedConfig];
-        if (selectedValue) {
-          const config = CONFIGURATIONS[category as keyof typeof CONFIGURATIONS].find(
-            (item) => item.value === selectedValue
-          );
-          return { id: config?.id, type: category, label: config?.label, value: selectedValue };
-        }
-        return null;
-      })
-      .filter(Boolean);
-
+    const selectedConfiguration = [
+      CONFIGURATIONS.ram.find(r => r.value === selectedConfig.ram),
+      CONFIGURATIONS.storage.find(s => s.value === selectedConfig.storage),
+      CONFIGURATIONS.os.find(o => o.value === selectedConfig.os)
+    ].filter(Boolean).map(config => ({
+      type: config.id.split('-')[0], // 'ram', 'hdd', 'os'
+      label: config.label,
+      value: config.value
+    }));
+  
     if (!hubId) {
       alert('Invalid hub selection. Redirecting to home.');
       navigate('/');
       return;
     }
-
+  
     const updatedBooking = {
       ...currentBooking,
       formData: {
@@ -85,14 +82,14 @@ const ToolSelectionPage: React.FC = () => {
       currentStep: 'confirmation',
       isInFinalPage: false,
     };
-
+  
     // Save the booking to global state and localStorage
     updateCurrentBooking(updatedBooking);
     addBookingResult(updatedBooking);
-
+  
     // Update the global variable for browser debugging
     window.currentBookingInfo = updatedBooking;
-
+  
     navigate('/confirmation');
   };
 
