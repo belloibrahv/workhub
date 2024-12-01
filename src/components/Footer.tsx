@@ -1,48 +1,104 @@
 import React from 'react';
+import { Box, Typography, Link as MUILink, IconButton, Stack } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFacebook, faTwitter, faLinkedin, faInstagram } from '@fortawesome/free-brands-svg-icons';
 
 const Footer: React.FC = () => {
     return (
-        <footer className="footer">
-            <div className="footer-content">
-                <div className="footer-about">
-                    <h3>About Workhub</h3>
-                    <p>
-                        Workhub provides premium workspace solutions across Lagos, allowing professionals to
-                        access tools and resources to enhance productivity.
-                    </p>
-                </div>
-                <div className="footer-links">
-                    <h3>Quick Links</h3>
-                    <ul>
-                        <li><a href="/">Home</a></li>
-                        <li><a href="/history">Booking History</a></li>
-                        <li><a href="/tools">Tools</a></li>
-                    </ul>
-                </div>
-                <div className="footer-social">
-                    <h3>Follow Us</h3>
-                    <div className="social-links">
-                        <a href="https://facebook.com" target="_blank" rel="noopener noreferrer">
+        <Box
+            component="footer"
+            sx={{
+                backgroundColor: 'primary.dark',
+                color: 'white',
+                padding: 3,
+                marginTop: 'auto',
+            }}
+        >
+            <Box
+                sx={{
+                    display: 'flex',
+                    flexDirection: { xs: 'column', md: 'row' },
+                    justifyContent: 'space-between',
+                    gap: 2,
+                }}
+            >
+                <Box>
+                    <Typography variant="h6" gutterBottom>
+                        About Workhub
+                    </Typography>
+                    <Typography variant="body2">
+                        Workhub provides premium workspace solutions across Lagos, allowing professionals to access tools and resources to enhance productivity.
+                    </Typography>
+                </Box>
+
+                <Box>
+                    <Typography variant="h6" gutterBottom>
+                        Quick Links
+                    </Typography>
+                    <Stack spacing={1}>
+                        <MUILink href="/" underline="hover" color="inherit">
+                            Home
+                        </MUILink>
+                        <MUILink href="/history" underline="hover" color="inherit">
+                            Booking History
+                        </MUILink>
+                        <MUILink href="/tools" underline="hover" color="inherit">
+                            Tools
+                        </MUILink>
+                    </Stack>
+                </Box>
+
+                <Box>
+                    <Typography variant="h6" gutterBottom>
+                        Follow Us
+                    </Typography>
+                    <Stack direction="row" spacing={1}>
+                        <IconButton
+                            component="a"
+                            href="https://facebook.com"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            sx={{ color: 'white' }}
+                        >
                             <FontAwesomeIcon icon={faFacebook} />
-                        </a>
-                        <a href="https://twitter.com" target="_blank" rel="noopener noreferrer">
+                        </IconButton>
+                        <IconButton
+                            component="a"
+                            href="https://twitter.com"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            sx={{ color: 'white' }}
+                        >
                             <FontAwesomeIcon icon={faTwitter} />
-                        </a>
-                        <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer">
+                        </IconButton>
+                        <IconButton
+                            component="a"
+                            href="https://linkedin.com"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            sx={{ color: 'white' }}
+                        >
                             <FontAwesomeIcon icon={faLinkedin} />
-                        </a>
-                        <a href="https://instagram.com" target="_blank" rel="noopener noreferrer">
+                        </IconButton>
+                        <IconButton
+                            component="a"
+                            href="https://instagram.com"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            sx={{ color: 'white' }}
+                        >
                             <FontAwesomeIcon icon={faInstagram} />
-                        </a>
-                    </div>
-                </div>
-            </div>
-            <div className="footer-bottom">
-                <p>&copy; {new Date().getFullYear()} Workhub. All rights reserved.</p>
-            </div>
-        </footer>
+                        </IconButton>
+                    </Stack>
+                </Box>
+            </Box>
+
+            <Box sx={{ textAlign: 'center', marginTop: 3 }}>
+                <Typography variant="body2">
+                    &copy; {new Date().getFullYear()} Workhub. All rights reserved.
+                </Typography>
+            </Box>
+        </Box>
     );
 };
 

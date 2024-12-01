@@ -1,48 +1,114 @@
 import React from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
+import { Box, Typography, Button, Card, CardMedia, CardContent, Divider, Chip } from '@mui/material';
+import LocationOnIcon from '@mui/icons-material/LocationOn';
+import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { Hub } from '../types/Hub';
 
 import ikeja_1 from '../assets/images/ikeja_1.jpg';
 import ikeja_2 from '../assets/images/ikeja_2.jpg';
 import sango_1 from '../assets/images/sango_1.jpg';
 
-
 // Mock hub data (to be replaced with API calls if available)
 const HUBS: Hub[] = [
-  { id: 'lekki', name: 'Lekki Hub', location: 'Lekki, Lagos', price: 5000, imageUrl: ikeja_1 },
-  { id: 'sango', name: 'Sango Hub', location: 'Sango, Lagos', price: 4500, imageUrl: ikeja_2 },
-  { id: 'yaba', name: 'Yaba Hub', location: 'Yaba, Lagos', price: 4000, imageUrl: sango_1 },
+    { id: 'lekki', name: 'Lekki Hub', location: 'Lekki, Lagos', price: 5000, imageUrl: ikeja_1 },
+    { id: 'sango', name: 'Sango Hub', location: 'Sango, Lagos', price: 4500, imageUrl: ikeja_2 },
+    { id: 'yaba', name: 'Yaba Hub', location: 'Yaba, Lagos', price: 4000, imageUrl: sango_1 },
 ];
 
 const HubDetailPage: React.FC = () => {
-  const { hubId } = useParams<{ hubId: string }>();
-  const navigate = useNavigate();
+    const { hubId } = useParams<{ hubId: string }>();
+    const navigate = useNavigate();
 
-  // Find the selected hub by ID
-  const hub = HUBS.find((h) => h.id === hubId);
+    // Find the selected hub by ID
+    const hub = HUBS.find((h) => h.id === hubId);
 
-  if (!hub) {
+    if (!hub) {
+        return (
+            <Box
+                sx={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    height: '100vh',
+                }}
+            >
+                <Typography variant="h4" color="error" gutterBottom>
+                    Hub not found
+                </Typography>
+                <Button
+                    variant="contained"
+                    startIcon={<ArrowBackIcon />}
+                    onClick={() => navigate('/')}
+                >
+                    Go Back to Home
+                </Button>
+            </Box>
+        );
+    }
+
     return (
-      <div className="hub-detail-page">
-        <h1>Hub not found</h1>
-        <button onClick={() => navigate('/')} className="back-btn">Go Back to Home</button>
-      </div>
+        <Box
+            sx={{
+                padding: 4,
+                maxWidth: 800,
+                margin: 'auto',
+            }}
+        >
+            <Card>
+                <CardMedia
+                    component="img"
+                    image={hub.imageUrl}
+                    alt={hub.name}
+                    sx={{
+                        height: 300,
+                        objectFit: 'cover',
+                    }}
+                />
+                <CardContent>
+                    <Typography variant="h4" gutterBottom>
+                        {hub.name}
+                    </Typography>
+                    <Divider sx={{ my: 2 }}>
+                        <Chip label="Hub Details" />
+                    </Divider>
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                        <LocationOnIcon color="primary" />
+                        <Typography variant="body1" sx={{ ml: 1 }}>
+                            <strong>Location:</strong> {hub.location}
+                        </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                        <AttachMoneyIcon color="primary" />
+                        <Typography variant="body1" sx={{ ml: 1 }}>
+                            <strong>Access Fee:</strong> ₦{hub.price.toLocaleString()} per hour
+                        </Typography>
+                    </Box>
+                    <Divider sx={{ my: 2 }} />
+                    <Button
+                        component={Link}
+                        to={`/checkin/${hub.id}`}
+                        variant="contained"
+                        color="primary"
+                        fullWidth
+                    >
+                        Check In
+                    </Button>
+                </CardContent>
+            </Card>
+            <Box sx={{ textAlign: 'center', marginTop: 3 }}>
+                <Button
+                    variant="outlined"
+                    startIcon={<ArrowBackIcon />}
+                    onClick={() => navigate('/')}
+                >
+                    Back to Home
+                </Button>
+            </Box>
+        </Box>
     );
-  }
-
-  return (
-    <div className="hub-detail-page">
-      <div className="hub-detail-container">
-        <img src={hub.imageUrl} alt={hub.name} className="hub-image" />
-        <div className="hub-info">
-          <h1>{hub.name}</h1>
-          <p><strong>Location:</strong> {hub.location}</p>
-          <p><strong>Access Fee:</strong> ₦{hub.price.toLocaleString()} per hour</p>
-          <Link to={`/checkin/${hub.id}`} className="book-btn">Check In</Link>
-        </div>
-      </div>
-    </div>
-  );
 };
 
 export default HubDetailPage;

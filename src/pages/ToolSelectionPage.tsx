@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useBookingStore } from '../store/booking';
+import { Box, Button, Typography, Card, CardContent, Divider, Stack, IconButton, Chip, CircularProgress } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faMemory, faHdd, faDesktop } from '@fortawesome/free-solid-svg-icons';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import { Hub } from '../types/Hub';
 
 const CONFIGURATIONS = {
   ram: [
@@ -35,6 +38,7 @@ const ToolSelectionPage: React.FC = () => {
     storage: '',
     os: '',
   });
+  const [loading, setLoading] = useState(false);
 
   // Load previously selected configurations (if available)
   useEffect(() => {
@@ -56,15 +60,18 @@ const ToolSelectionPage: React.FC = () => {
   };
 
   // Submit the selected configuration
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    setLoading(true);
+  
+    // Map selected configurations to tools array
     const selectedConfiguration = [
-      CONFIGURATIONS.ram.find(r => r.value === selectedConfig.ram),
-      CONFIGURATIONS.storage.find(s => s.value === selectedConfig.storage),
-      CONFIGURATIONS.os.find(o => o.value === selectedConfig.os)
-    ].filter(Boolean).map(config => ({
-      type: config.id.split('-')[0], // 'ram', 'hdd', 'os'
+      CONFIGURATIONS.ram.find((r) => r.value === selectedConfig.ram),
+      CONFIGURATIONS.storage.find((s) => s.value === selectedConfig.storage),
+      CONFIGURATIONS.os.find((o) => o.value === selectedConfig.os),
+    ].filter(Boolean).map((config) => ({
+      type: config.id.split('-')[0], // Extract type ('ram', 'storage', 'os')
       label: config.label,
-      value: config.value
+      value: config.value,
     }));
   
     if (!hubId) {
@@ -73,6 +80,7 @@ const ToolSelectionPage: React.FC = () => {
       return;
     }
   
+    // Update currentBooking state
     const updatedBooking = {
       ...currentBooking,
       formData: {
@@ -83,15 +91,14 @@ const ToolSelectionPage: React.FC = () => {
       isInFinalPage: false,
     };
   
-    // Save the booking to global state and localStorage
+    // Save to global `currentBookingInfo` and local state
     updateCurrentBooking(updatedBooking);
-    addBookingResult(updatedBooking);
+    window.currentBookingInfo = updatedBooking;  // For debugging and finalization
   
-    // Update the global variable for browser debugging
-    window.currentBookingInfo = updatedBooking;
-  
+    setLoading(false);
     navigate('/confirmation');
   };
+  
 
   // Get the label of the selected configuration option
   const getSelectedLabel = (category: 'ram' | 'storage' | 'os') => {
@@ -101,79 +108,89 @@ const ToolSelectionPage: React.FC = () => {
   };
 
   // Render configuration sections
-  const renderConfigSection = (title: string, options: typeof CONFIGURATIONS.ram, category: 'ram' | 'storage' | 'os') => (
-    <div className="config-section">
-      <h3 className="section-title">{title}</h3>
-      <div className="options-grid">
+  const renderConfigSection = (
+    title: string,
+    options: typeof CONFIGURATIONS.ram,
+    category: 'ram' | 'storage' | 'os'
+  ) => (
+    <Box sx={{ marginBottom: 4 }}>
+      <Typography variant="h6" gutterBottom>
+        {title}
+      </Typography>
+      <Stack direction="row" spacing={2} flexWrap="wrap">
         {options.map((option) => (
-          <button
+          <Button
             key={option.id}
+            variant={selectedConfig[category] === option.value ? 'contained' : 'outlined'}
+            color={selectedConfig[category] === option.value ? 'primary' : 'default'}
             onClick={() => handleSelect(category, option.value)}
-            className={`option-button ${selectedConfig[category] === option.value ? 'selected' : ''}`}
+            sx={{
+              minWidth: 120,
+              height: 50,
+              borderRadius: 3,
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              textTransform: 'none',
+            }}
+            startIcon={<FontAwesomeIcon icon={category === 'ram' ? faMemory : category === 'storage' ? faHdd : faDesktop} />}
           >
-            <FontAwesomeIcon icon={category === 'ram' ? faMemory : category === 'storage' ? faHdd : faDesktop} />
             {option.label}
-          </button>
+          </Button>
         ))}
-      </div>
-    </div>
+      </Stack>
+    </Box>
   );
 
   return (
-    <div className="configuration-selection-page">
-      <h1>Select Configuration</h1>
-      <div className="main-container">
-        <div className="preview-section">
-          <div className="preview-content">
-            <h2>Your Configuration</h2>
-            <div className="preview-details">
-              <div className="preview-item">
-                <FontAwesomeIcon icon={faMemory} className="preview-icon" />
-                <div className="preview-info">
-                  <label>Memory</label>
-                  <span>{getSelectedLabel('ram')}</span>
-                </div>
-              </div>
-              <div className="preview-item">
-                <FontAwesomeIcon icon={faHdd} className="preview-icon" />
-                <div className="preview-info">
-                  <label>Storage</label>
-                  <span>{getSelectedLabel('storage')}</span>
-                </div>
-              </div>
-              <div className="preview-item">
-                <FontAwesomeIcon icon={faDesktop} className="preview-icon" />
-                <div className="preview-info">
-                  <label>Operating System</label>
-                  <span>{getSelectedLabel('os')}</span>
-                </div>
-              </div>
-            </div>
-            <div className="preview-summary">
-              {Object.values(selectedConfig).every((value) => value) ? (
-                <div className="complete-message">Configuration Complete!</div>
-              ) : (
-                <div className="incomplete-message">
-                  Please select {3 - Object.values(selectedConfig).filter(Boolean).length} more options
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-        <div className="options-container">
+    <Box sx={{ padding: 4 }}>
+      <Typography variant="h4" gutterBottom>
+        Select Your Tools Configuration
+      </Typography>
+      <Box sx={{ display: 'flex', gap: 4, marginBottom: 4 }}>
+        <Box sx={{ flex: 1 }}>
+          <Typography variant="h5" gutterBottom>
+            Your Current Configuration
+          </Typography>
+          <Card>
+            <CardContent>
+              <Stack direction="column" spacing={2}>
+                <Stack direction="row" spacing={1}>
+                  <FontAwesomeIcon icon={faMemory} />
+                  <Typography>{getSelectedLabel('ram')}</Typography>
+                </Stack>
+                <Stack direction="row" spacing={1}>
+                  <FontAwesomeIcon icon={faHdd} />
+                  <Typography>{getSelectedLabel('storage')}</Typography>
+                </Stack>
+                <Stack direction="row" spacing={1}>
+                  <FontAwesomeIcon icon={faDesktop} />
+                  <Typography>{getSelectedLabel('os')}</Typography>
+                </Stack>
+              </Stack>
+            </CardContent>
+          </Card>
+        </Box>
+
+        <Box sx={{ flex: 2 }}>
           {renderConfigSection('RAM', CONFIGURATIONS.ram, 'ram')}
           {renderConfigSection('Storage', CONFIGURATIONS.storage, 'storage')}
           {renderConfigSection('Operating System', CONFIGURATIONS.os, 'os')}
-          <button
+
+          <Button
+            variant="contained"
+            color="primary"
             onClick={handleSubmit}
-            disabled={!selectedConfig.ram || !selectedConfig.storage || !selectedConfig.os}
-            className="submit-button"
+            fullWidth
+            disabled={!selectedConfig.ram || !selectedConfig.storage || !selectedConfig.os || loading}
+            sx={{ marginTop: 3 }}
+            endIcon={loading ? <CircularProgress size={24} color="inherit" /> : <ArrowForwardIcon />}
           >
-            Confirm Configuration
-          </button>
-        </div>
-      </div>
-    </div>
+            {loading ? 'Submitting...' : 'Confirm Configuration'}
+          </Button>
+        </Box>
+      </Box>
+    </Box>
   );
 };
 

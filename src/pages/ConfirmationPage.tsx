@@ -1,354 +1,324 @@
 import React, { useEffect, useState } from 'react';
+import { 
+  Box, 
+  Typography, 
+  Container, 
+  Grid, 
+  Card, 
+  CardContent, 
+  Button, 
+  TextField, 
+  Stepper,
+  Step,
+  StepLabel,
+  Chip,
+  CircularProgress,
+  Alert
+} from '@mui/material';
+import { 
+  CreditCard as CreditCardIcon, 
+  Payment as PaymentIcon, 
+  Schedule as ScheduleIcon,
+  CheckCircle as CheckCircleIcon,
+  LocationOn as LocationOnIcon,
+  DevicesOther as DevicesIcon
+} from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useBookingStore } from '../store/booking';
-import {
-  CreditCard,
-  Calendar,
-  KeySquare,
-  MapPin,
-  Package,
-  CheckCircle,
-  Clock,
-  CreditCard as PaymentIcon,
-} from 'lucide-react';
+import { finalizeBooking } from '@/utils/finalizeBooking';
 
-const validateCardNumber = (cardNumber: string) => {
+// Validation Utilities
+const validateCardNumber = (cardNumber: string): boolean => {
+  const sanitizedNumber = cardNumber.replace(/\s/g, '');
   let sum = 0;
   let shouldDouble = false;
-  for (let i = cardNumber.length - 1; i >= 0; i--) {
-    let digit = parseInt(cardNumber.charAt(i), 10);
+  
+  for (let i = sanitizedNumber.length - 1; i >= 0; i--) {
+    let digit = parseInt(sanitizedNumber.charAt(i), 10);
+    
     if (shouldDouble) {
-      if ((digit *= 2) > 9) digit -= 9;
+      digit *= 2;
+      if (digit > 9) digit -= 9;
     }
+    
     sum += digit;
     shouldDouble = !shouldDouble;
   }
+  
   return sum % 10 === 0;
 };
 
 const ConfirmationPage: React.FC = () => {
   const navigate = useNavigate();
   const { currentBooking, updateCurrentBooking, addBookingResult } = useBookingStore();
+  
+  const [activeStep, setActiveStep] = useState(0);
   const [bookingDetails, setBookingDetails] = useState<any>(null);
+  const [paymentMethod, setPaymentMethod] = useState<'now' | 'later' | null>(null);
   const [paymentDetails, setPaymentDetails] = useState({
     cardNumber: '',
     expiryDate: '',
     cvv: '',
   });
-  const [errorMessage, setErrorMessage] = useState<string>('');
-  const [payNow, setPayNow] = useState<boolean | null>(null);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [loading, setLoading] = useState(false);
 
+  
   useEffect(() => {
     if (!currentBooking?.formData?.hubId) {
-      alert('No booking details found. Redirecting to home.');
       navigate('/');
       return;
     }
+  
     setBookingDetails(currentBooking.formData);
-
-    // Ensure window.bookingResults contains the current list of bookings
-    window.bookingResults = currentBooking.bookingHistory || [];
+    
+    if (!window.bookingResults) {
+      window.bookingResults = [];
+    }
+    
+    window.currentBookingInfo = {};
   }, [currentBooking, navigate]);
-
-  const handlePaymentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  
+  const handlePaymentMethodSelect = (method: 'now' | 'later') => {
+    setPaymentMethod(method);
+    setActiveStep((prevStep) => prevStep + 1); // Correctly move to next step
+  };
+  
+  const handlePaymentDetailsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setPaymentDetails((prev) => ({ ...prev, [name]: value }));
+    setPaymentDetails(prev => ({ ...prev, [name]: value }));
   };
 
-  const handlePaymentSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handlePaymentSubmit = async () => {
     setErrorMessage('');
+    setLoading(true);
   
-    if (!validateCardNumber(paymentDetails.cardNumber)) {
-      setErrorMessage('Invalid card number.');
-      return;
-    }
-  
-    const expiryDate = new Date(paymentDetails.expiryDate);
-    const today = new Date();
-    if (expiryDate < today) {
-      setErrorMessage('Card has expired.');
-      return;
-    }
-  
-    if (!/^\d{3}$/.test(paymentDetails.cvv)) {
-      setErrorMessage('Invalid CVV.');
-      return;
-    }
-  
-    const updatedBooking = {
-      ...currentBooking,
-      formData: {
-        ...currentBooking.formData,
-        selectedTools: currentBooking.formData?.selectedTools || [], // Ensure tools are stored
-        payment: {
-          ...paymentDetails,
-          payNow: true,
-        },
-      },
-      status: 'confirmed',
-      timestamp: new Date().toISOString(),
-      isInFinalPage: true,
-    }; 
-  
-    // Update the global state and window.bookingResults
-    updateCurrentBooking(updatedBooking);
-    addBookingResult(updatedBooking);
-  
-    // Update the global variable for testing with specific structure
-    window.bookingResults = (window.bookingResults || []).map(booking => ({
-      user: {
-        name: booking.formData?.userDetails?.fullName || '',
-        email: booking.formData?.userDetails?.email || '',
-      },
-      configuration: {
-        RAM: booking.formData?.selectedTools?.find(tool =>
-          tool.type.toLowerCase().includes('ram'))?.label || '',
-        Storage: booking.formData?.selectedTools?.find(tool => 
-          tool.type.toLowerCase().includes('storage') || 
-          tool.type.toLowerCase().includes('hdd')
-        )?.label || '',
-        'Operating system': booking.formData?.selectedTools?.find(tool => 
-          tool.type.toLowerCase().includes('os')
-        )?.label || '',
-      },
-      PaymentMethod: {
-        payNow: booking.formData?.payment?.payNow || false,
-        payLater: !booking.formData?.payment?.payNow || false,
-      },
-      PaymentDetails: {
-        'card number': booking.formData?.payment?.cardNumber || '',
-        'expiry date': booking.formData?.payment?.expiryDate || '',
-        cvv: booking.formData?.payment?.cvv || '',
-      },
-      IsFinalPage: booking.isInFinalPage || false,
-    }));
-  
-    window.currentBookingInfo = {
-      user: {
-        name: updatedBooking.formData?.userDetails?.fullName || '',
-        email: updatedBooking.formData?.userDetails?.email || '',
-      },
-      configuration: {
-        RAM: updatedBooking.formData?.selectedTools?.find(tool => tool.type === 'ram')?.label || '',
-        Storage: updatedBooking.formData?.selectedTools?.find(tool => tool.type === 'storage')?.label || '',
-        'Operating system': updatedBooking.formData?.selectedTools?.find(tool => tool.type === 'os')?.label || '',
-      },
-      PaymentMethod: {
-        payNow: updatedBooking.formData?.payment?.payNow || false,
-        payLater: !updatedBooking.formData?.payment?.payNow || false,
-      },
-      PaymentDetails: {
-        'card number': updatedBooking.formData?.payment?.cardNumber || '',
-        'expiry date': updatedBooking.formData?.payment?.expiryDate || '',
-        cvv: updatedBooking.formData?.payment?.cvv || '',
-      },
-      IsFinalPage: updatedBooking.isInFinalPage || false,
-    };
-  
-    alert('Payment successful! Booking confirmed.');
-    navigate('/history');
-  };
-
-  const handlePayLater = () => {
-    const updatedBooking = {
-      ...currentBooking,
-      formData: {
-        ...currentBooking.formData,
-        payment: null,
-        // Only store confirmed tools
-        selectedTools: currentBooking.formData.selectedTools || [],
-      },
-      status: 'pending',
-      timestamp: new Date().toISOString(),
-      isInFinalPage: true,
-    };
-  
-    // Update the global state and window.bookingResults
-    updateCurrentBooking(updatedBooking);
-    addBookingResult(updatedBooking);
-  
-    // Update the global variable for testing with specific structure
-    // Similar to handlePaymentSubmit logic
-    window.bookingResults = (window.bookingResults || []).map(booking => ({
-      user: {
-        name: booking.formData?.userDetails?.fullName || '',
-        email: booking.formData?.userDetails?.email || '',
-      },
-      configuration: {
-        RAM: booking.formData?.selectedTools?.find(tool => tool.type === 'ram')?.label || '',
-        Storage: booking.formData?.selectedTools?.find(tool => tool.type === 'storage')?.label || '',
-        'Operating system': booking.formData?.selectedTools?.find(tool => tool.type === 'os')?.label || '',
-      },
-      PaymentMethod: {
-        payNow: false,
-        payLater: true,
-      },
-      PaymentDetails: {
-        'card number': '',
-        'expiry date': '',
-        cvv: '',
-      },
-      IsFinalPage: booking.isInFinalPage || false,
-    }));
-  
-    window.currentBookingInfo = {
-      user: {
-        name: updatedBooking.formData?.userDetails?.fullName || '',
-        email: updatedBooking.formData?.userDetails?.email || '',
-      },
-      configuration: {
-        RAM: updatedBooking.formData?.selectedTools?.find(tool => tool.type === 'ram')?.label || '',
-        Storage: updatedBooking.formData?.selectedTools?.find(tool => tool.type === 'storage')?.label || '',
-        'Operating system': updatedBooking.formData?.selectedTools?.find(tool => tool.type === 'os')?.label || '',
-      },
-      PaymentMethod: {
-        payNow: false,
-        payLater: true,
-      },
-      PaymentDetails: {
-        'card number': '',
-        'expiry date': '',
-        cvv: '',
-      },
-      IsFinalPage: updatedBooking.isInFinalPage || false,
-    };
-  
-    alert('Booking saved as pending. You can pay later.');
-    navigate('/history');
-  };
-
-  const renderConfigurationDetails = (configurations: any[] = []) => {
-      if (!configurations || configurations.length === 0) {
-        return <p>No configuration details available.</p>;
+    if (paymentMethod === 'now') {
+      // Validate card details
+      if (!validateCardNumber(paymentDetails.cardNumber)) {
+        setErrorMessage('Invalid card number. Please check and try again.');
+        setLoading(false);
+        return;
       }
-    
-      const configMap = configurations.reduce((acc, config) => {
-        const type = config.type.toLowerCase();
-        if (type.includes('ram')) {
-          acc.ram = config.label || 'Default RAM';
-        } else if (type.includes('storage') || type.includes('hdd')) {
-          acc.storage = config.label || 'Default Storage';
-        } else if (type.includes('os')) {
-          acc.os = config.label || 'Default OS';
-        }
-        return acc;
-      }, {} as Record<string, string>);
-    
-      return (
-        <div className="formatted-configuration">
-          <p><strong>RAM:</strong> <span>{configMap.ram || 'Not Selected'}</span></p>
-          <p><strong>Storage:</strong> <span>{configMap.storage || 'Not Selected'}</span></p>
-          <p><strong>Operating System:</strong> <span>{configMap.os || 'Not Selected'}</span></p>
-        </div>
-      );
-    };
+      const [year, month] = paymentDetails.expiryDate.split('-');
+      const expiryDate = new Date(+year, +month - 1);
+      if (expiryDate < new Date()) {
+        setErrorMessage('Card has expired.');
+        setLoading(false);
+        return;
+      }
+      if (!/^\d{3}$/.test(paymentDetails.cvv)) {
+        setErrorMessage('Invalid CVV.');
+        setLoading(false);
+        return;
+      }
+    }
+  
+    try {
+      const bookingResult = {
+        ...currentBooking,
+        bookingId: crypto.randomUUID(),
+        formData: {
+          ...currentBooking.formData,
+          paymentDetails: {
+            paymentMode: {
+              payNow: paymentMethod === 'now',
+              payLater: paymentMethod === 'later',
+            },
+            ...(paymentMethod === 'now' && { cardDetails: paymentDetails }),
+          },
+        },
+        status: 'confirmed',
+        timestamp: new Date().toISOString(),
+        isInFinalPage: true,
+      };
+  
+      finalizeBooking(bookingResult);
+      addBookingResult(bookingResult);
+      navigate('/history', { replace: true });
+    } catch (error) {
+      setErrorMessage('Failed to save booking. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  if (!bookingDetails) {
+  const renderToolConfiguration = () => {
+    const tools = bookingDetails?.selectedTools || [];
+    
     return (
-      <div className="confirmation-page">
-        <h1 className="page-title">Loading booking details...</h1>
-      </div>
+      <Grid container spacing={2}>
+        {tools.map((tool: any, index: number) => (
+          <Grid item xs={12} sm={4} key={index}>
+            <Chip 
+              icon={<DevicesIcon />} 
+              label={`${tool.type}: ${tool.label}`} 
+              variant="outlined" 
+            />
+          </Grid>
+        ))}
+      </Grid>
     );
-  }
+  };
+
+  const paymentSteps = ['Select Payment Method', 'Payment Details'];
 
   return (
-    <div className="confirmation-page">
-      <h1 className="page-title">Booking Confirmation</h1>
-      <div className="confirmation-card">
-        <div className="hub-details">
-          <h2 className="section-title">
-            <MapPin size={20} />
-            Hub Details
-          </h2>
-          <div className="hub-location">{bookingDetails.hubId}</div>
-        </div>
+    <Container maxWidth="md">
+      <Box sx={{ my: 4 }}>
+        <Typography variant="h4" gutterBottom>
+          Booking Confirmation
+        </Typography>
 
-        <div className="configuration-section">
-          <h2 className="section-title">
-            <Package size={20} />
-            Selected Configuration
-          </h2>
-          {bookingDetails.selectedTools && bookingDetails.selectedTools.length > 0 ? (
-            renderConfigurationDetails(bookingDetails.selectedTools)
-          ) : (
-            <p className="no-config-message">No configuration selected.</p>
-          )}
-        </div>
+        <Stepper activeStep={activeStep} alternativeLabel>
+          {paymentSteps.map((label) => (
+            <Step key={label}>
+              <StepLabel>{label}</StepLabel>
+            </Step>
+          ))}
+        </Stepper>
 
-        {payNow === null ? (
-          <div className="pay-options">
-            <button className="pay-now-btn" onClick={() => setPayNow(true)}>
-              <PaymentIcon size={20} />
-              Pay Now
-            </button>
-            <button className="pay-later-btn" onClick={handlePayLater}>
-              <Clock size={20} />
-              Pay Later
-            </button>
-          </div>
-        ) : (
-          <form className="payment-form" onSubmit={handlePaymentSubmit}>
-            <h2 className="section-title">
-              <CreditCard size={20} />
-              Payment Details
-            </h2>
-            {errorMessage && <div className="error-message">{errorMessage}</div>}
-            <div className="form-group">
-              <label className="form-label">
-                <CreditCard size={16} />
-                Card Number
-              </label>
-              <input
-                type="text"
-                name="cardNumber"
-                maxLength={16}
-                value={paymentDetails.cardNumber}
-                onChange={handlePaymentChange}
-                className="form-input"
-                required
-              />
-            </div>
+        <Card sx={{ mt: 3 }}>
+          <CardContent>
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="h6" gutterBottom>
+                <LocationOnIcon sx={{ mr: 1 }} />
+                Hub Details
+              </Typography>
+              <Typography>{bookingDetails?.hubId}</Typography>
+            </Box>
 
-            <div className="form-group">
-              <label className="form-label">
-                <Calendar size={16} />
-                Expiry Date
-              </label>
-              <input
-                type="month"
-                name="expiryDate"
-                value={paymentDetails.expiryDate}
-                onChange={handlePaymentChange}
-                className="form-input"
-                required
-              />
-            </div>
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="h6" gutterBottom>
+                <DevicesIcon sx={{ mr: 1 }} />
+                Selected Tools
+              </Typography>
+              {renderToolConfiguration()}
+            </Box>
 
-            <div className="form-group">
-              <label className="form-label">
-                <KeySquare size={16} />
-                CVV
-              </label>
-              <input
-                type="text"
-                name="cvv"
-                maxLength={3}
-                value={paymentDetails.cvv}
-                onChange={handlePaymentChange}
-                className="form-input"
-                required
-              />
-            </div>
+            {paymentMethod === null && (
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
+                <Button 
+                  variant="contained" 
+                  color="primary" 
+                  startIcon={<PaymentIcon />}
+                  onClick={() => handlePaymentMethodSelect('now')}
+                >
+                  Pay Now
+                </Button>
+                <Button 
+                  variant="outlined" 
+                  color="secondary" 
+                  startIcon={<ScheduleIcon />}
+                  onClick={() => handlePaymentMethodSelect('later')}
+                >
+                  Pay Later
+                </Button>
+              </Box>
+            )}
 
-            <button type="submit" className="submit-btn">
-              <CheckCircle size={20} />
-              Confirm and Pay
-            </button>
-          </form>
-        )}
-      </div>
-    </div>
+            {paymentMethod === 'now' && (
+              <Box component="form" onSubmit={(e) => {
+                e.preventDefault();
+                handlePaymentSubmit();
+              }}>
+                <Typography variant="h6" sx={{ mt: 2, mb: 1 }}>
+                  <CreditCardIcon sx={{ mr: 1 }} />
+                  Payment Details
+                </Typography>
+                
+                {errorMessage && (
+                  <Alert severity="error" sx={{ mb: 2 }}>
+                    {errorMessage}
+                  </Alert>
+                )}
+
+                <Grid container spacing={2}>
+                  <Grid item xs={12}>
+                    <TextField
+                      fullWidth
+                      label="Card Number"
+                      name="cardNumber"
+                      value={paymentDetails.cardNumber}
+                      onChange={handlePaymentDetailsChange}
+                      variant="outlined"
+                      required
+                      inputProps={{ maxLength: 16 }}
+                    />
+                  </Grid>
+                  <Grid item xs={6}>
+                    <TextField
+                      fullWidth
+                      label="Expiry Date"
+                      name="expiryDate"
+                      type="month"
+                      value={paymentDetails.expiryDate}
+                      onChange={handlePaymentDetailsChange}
+                      variant="outlined"
+                      required
+                    />
+                  </Grid>
+                  <Grid item xs={6}>
+                    <TextField
+                      fullWidth
+                      label="CVV"
+                      name="cvv"
+                      value={paymentDetails.cvv}
+                      onChange={handlePaymentDetailsChange}
+                      variant="outlined"
+                      required
+                      inputProps={{ maxLength: 3 }}
+                    />
+                  </Grid>
+                </Grid>
+
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
+                  <Button 
+                    variant="outlined" 
+                    onClick={() => setPaymentMethod(null)}
+                  >
+                    Back to Payment Methods
+                  </Button>
+                  <Button 
+                    type="submit" 
+                    variant="contained" 
+                    color="success"
+                    startIcon={<CheckCircleIcon />}
+                    disabled={loading}
+                  >
+                    {loading ? <CircularProgress size={20} color="inherit" /> : 'Confirm Payment'}
+                  </Button>
+                </Box>
+              </Box>
+            )}
+
+            {paymentMethod === 'later' && (
+              <Box sx={{ mt: 2, textAlign: 'center' }}>
+                <Typography variant="body1" sx={{ mb: 2 }}>
+                  You've chosen to pay later. Your booking is pending.
+                </Typography>
+                <Button 
+                  variant="outlined" 
+                  onClick={() => setPaymentMethod(null)}
+                >
+                  Back to Payment Methods
+                </Button>
+                <Button 
+                  variant="contained" 
+                  color="primary"
+                  sx={{ ml: 2 }}
+                  onClick={handlePaymentSubmit}
+                  disabled={loading}
+                  startIcon={loading ? <CircularProgress size={20} /> : <CheckCircleIcon />}
+                >
+                  Confirm Booking
+                </Button>
+              </Box>
+            )}
+          </CardContent>
+        </Card>
+      </Box>
+    </Container>
   );
 };
 

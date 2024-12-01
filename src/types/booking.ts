@@ -15,6 +15,17 @@ export interface BookingResult {
   totalPrice: number;
   bookingTime: string;
   bookingId: string;
+  paymentDetails: {
+    paymentMode: {
+      payNow: boolean;
+      payLater: boolean;
+    };
+    cardDetails: {
+      cardNumber: string;
+      expiryDate: string;
+      cvv: string;
+    };
+  };
 }
 
 export interface CurrentBookingInfo {

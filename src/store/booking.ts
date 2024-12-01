@@ -28,9 +28,22 @@ export const useBookingStore = create<BookingStore>((set) => ({
     })),
     addBookingResult: (result) =>
       set((state) => {
-        const updatedHistory = [...state.bookingHistory, result];
+        const existingBookingIndex = state.bookingHistory.findIndex(
+          (booking) =>
+            booking.formData?.userDetails?.email === result.formData?.userDetails?.email &&
+            booking.formData?.hubId === result.formData?.hubId &&
+            booking.timestamp === result.timestamp
+        );
     
-        // Ensure selectedTools are stored correctly
+        // If booking already exists, replace it; otherwise, add new booking
+        const updatedHistory =
+          existingBookingIndex >= 0
+            ? state.bookingHistory.map((booking, index) =>
+                index === existingBookingIndex ? result : booking
+              )
+            : [...state.bookingHistory, result];
+    
+        // Format and store bookings
         const formattedHistory = updatedHistory.map((booking) => ({
           ...booking,
           formData: {
@@ -39,9 +52,11 @@ export const useBookingStore = create<BookingStore>((set) => ({
           },
         }));
     
+        // Sync with storage or global variable
         localStorage.setItem('bookingResults', JSON.stringify(formattedHistory));
         window.bookingResults = formattedHistory;
     
         return { bookingHistory: formattedHistory };
       }),
+    
 }));
