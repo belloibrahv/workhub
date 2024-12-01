@@ -1,7 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useBookingStore } from '../store/booking';
-import { Box, Button, TextField, Typography, Select, MenuItem, FormControl, InputLabel, FormHelperText, CircularProgress, Alert, Stack } from '@mui/material';
+import {
+  Box,
+  Button,
+  TextField,
+  Typography,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  FormHelperText,
+  CircularProgress,
+  Alert,
+  Stack,
+} from '@mui/material';
 
 const CheckinPage: React.FC = () => {
   const { hubId } = useParams<{ hubId: string }>();
@@ -27,14 +40,8 @@ const CheckinPage: React.FC = () => {
         ...formData,
         ...currentBooking.formData.userDetails,
       });
-    } else {
-      setFormData((prev) => ({
-        ...prev,
-        visitDay: new Date().toISOString().split('T')[0], // Default to today's date
-      }));
     }
   }, [currentBooking]);
-  
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -43,7 +50,7 @@ const CheckinPage: React.FC = () => {
 
   const validateForm = () => {
     const { fullName, email, phone, age, visitDay, startHour, endHour } = formData;
-  
+
     if (!fullName.trim()) return 'Full Name is required.';
     if (fullName.length < 3) return 'Full Name must be at least 3 characters.';
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -55,12 +62,9 @@ const CheckinPage: React.FC = () => {
     if (!startHour) return 'Start Hour is required.';
     if (!endHour) return 'End Hour is required.';
     if (startHour >= endHour) return 'End Hour must be later than Start Hour.';
-  
-    const visitDate = new Date(visitDay);
-    if (visitDate < new Date().setHours(0, 0, 0, 0)) return 'Visit Day cannot be in the past.';
-  
+
     return null;
-  };  
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -166,7 +170,7 @@ const CheckinPage: React.FC = () => {
             fullWidth
             required
             InputLabelProps={{ shrink: true }}
-          />        
+          />
           <TextField
             label="Start Hour"
             name="startHour"
