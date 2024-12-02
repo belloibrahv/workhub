@@ -55,36 +55,28 @@ const Footer: React.FC = () => {
                     <Stack direction="row" spacing={1}>
                         <IconButton
                             component="a"
-                            href="https://facebook.com"
-                            target="_blank"
-                            rel="noopener noreferrer"
+                            href="#"  // Changed from actual URL to "#"
                             sx={{ color: 'white' }}
                         >
                             <FontAwesomeIcon icon={faFacebook} />
                         </IconButton>
                         <IconButton
                             component="a"
-                            href="https://twitter.com"
-                            target="_blank"
-                            rel="noopener noreferrer"
+                            href="#"  // Changed from actual URL to "#"
                             sx={{ color: 'white' }}
                         >
                             <FontAwesomeIcon icon={faTwitter} />
                         </IconButton>
                         <IconButton
                             component="a"
-                            href="https://linkedin.com"
-                            target="_blank"
-                            rel="noopener noreferrer"
+                            href="#"  // Changed from actual URL to "#"
                             sx={{ color: 'white' }}
                         >
                             <FontAwesomeIcon icon={faLinkedin} />
                         </IconButton>
                         <IconButton
                             component="a"
-                            href="https://instagram.com"
-                            target="_blank"
-                            rel="noopener noreferrer"
+                            href="#"  // Changed from actual URL to "#"
                             sx={{ color: 'white' }}
                         >
                             <FontAwesomeIcon icon={faInstagram} />
