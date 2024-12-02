@@ -1,50 +1,69 @@
 export interface BookingResult {
-  hubLocation: string;
-  bookingDate: string;
-  timeSlot: string;
+  hubDetails: {
+    id: number;
+    name: string;
+  };
   userDetails: {
     name: string;
     email: string;
-    occupation: string;
+    phone: string;
+    ageRange: string;
   };
-  selectedTools: Array<{
-    id: string;
-    name: string;
-    quantity: number;
-  }>;
-  totalPrice: number;
-  bookingTime: string;
-  bookingId: string;
+  bookingDetails: {
+    bookDate: string;
+    bookStartTime: string;
+    bookEndTime: string;
+  };
+  configDetails: {
+    ram: string;
+    storage: string;
+    os: string;
+  };
   paymentDetails: {
     paymentMode: {
       payNow: boolean;
       payLater: boolean;
     };
-    cardDetails: {
+    cardDetails?: {
       cardNumber: string;
       expiryDate: string;
       cvv: string;
     };
   };
+  isInFinalPage: boolean;
 }
 
 export interface CurrentBookingInfo {
-  isInFinalPage: boolean;
-  currentStep: string;
-  formData: {
-    hubLocation?: string;
-    bookingDate?: string;
-    timeSlot?: string;
-    userDetails?: {
-      name?: string;
-      email?: string;
-      occupation?: string;
-    };
-    selectedTools?: Array<{
-      id: string;
-      name: string;
-      quantity: number;
-    }>;
+  hubDetails: {
+    id: number;
+    name: string;
   };
-  isValid: boolean;
+  userDetails: {
+    name: string;
+    email: string;
+    phone: string;
+    ageRange: string;
+  };
+  bookingDetails: {
+    bookDate: string;
+    bookStartTime: string;
+    bookEndTime: string;
+  };
+  configDetails: {
+    ram: string;
+    storage: string;
+    os: string;
+  };
+  paymentDetails: {
+    paymentMode: {
+      payNow: boolean;
+      payLater: boolean;
+    };
+    cardDetails?: {
+      cardNumber: string;
+      expiryDate: string;
+      cvv: string;
+    };
+  };
+  isInFinalPage: boolean;
 }

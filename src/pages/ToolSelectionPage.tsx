@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useBookingStore } from '../store/booking';
-import { Box, Button, Typography, Card, CardContent, Divider, Stack, IconButton, Chip, CircularProgress } from '@mui/material';
+import { Box, Button, Typography, Card, CardContent, Stack, IconButton, CircularProgress } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faMemory, faHdd, faDesktop } from '@fortawesome/free-solid-svg-icons';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
-import { Hub } from '../types/Hub';
 
 const CONFIGURATIONS = {
   ram: [
@@ -31,7 +30,7 @@ const CONFIGURATIONS = {
 const ToolSelectionPage: React.FC = () => {
   const { hubId } = useParams<{ hubId: string }>();
   const navigate = useNavigate();
-  const { currentBooking, updateCurrentBooking, addBookingResult } = useBookingStore();
+  const { currentBooking, updateCurrentBooking } = useBookingStore();
 
   const [selectedConfig, setSelectedConfig] = useState({
     ram: '',
@@ -42,12 +41,25 @@ const ToolSelectionPage: React.FC = () => {
 
   // Load previously selected configurations (if available)
   useEffect(() => {
-    if (currentBooking?.formData?.selectedTools) {
-      const previousSelection = currentBooking.formData.selectedTools.reduce((acc, tool) => {
-        acc[tool.type] = tool.value;
-        return acc;
-      }, {} as Record<string, string>);
-      setSelectedConfig(previousSelection);
+    // Check if configDetails exist in current booking
+    if (currentBooking?.configDetails) {
+      setSelectedConfig({
+        ram: currentBooking.configDetails.ram,
+        storage: currentBooking.configDetails.storage,
+        os: currentBooking.configDetails.os
+      });
+    }
+  }, [currentBooking]);
+
+  // Load previously selected configurations (if available)
+  useEffect(() => {
+    // Check if configDetails exist in current booking
+    if (currentBooking?.configDetails) {
+      setSelectedConfig({
+        ram: currentBooking.configDetails.ram,
+        storage: currentBooking.configDetails.storage,
+        os: currentBooking.configDetails.os
+      });
     }
   }, [currentBooking]);
 
@@ -60,45 +72,66 @@ const ToolSelectionPage: React.FC = () => {
   };
 
   // Submit the selected configuration
-  const handleSubmit = async () => {
-    setLoading(true);
+    // Load previously selected configurations (if available)
+    useEffect(() => {
+      // Check if configDetails exist in current booking
+      if (currentBooking?.configDetails) {
+        setSelectedConfig({
+          ram: currentBooking.configDetails.ram,
+          storage: currentBooking.configDetails.storage,
+          os: currentBooking.configDetails.os
+        });
+      }
+    }, [currentBooking]);
   
-    // Map selected configurations to tools array
-    const selectedConfiguration = [
-      CONFIGURATIONS.ram.find((r) => r.value === selectedConfig.ram),
-      CONFIGURATIONS.storage.find((s) => s.value === selectedConfig.storage),
-      CONFIGURATIONS.os.find((o) => o.value === selectedConfig.os),
-    ].filter(Boolean).map((config) => ({
-      type: config.id.split('-')[0], // Extract type ('ram', 'storage', 'os')
-      label: config.label,
-      value: config.value,
-    }));
+    // Submit the selected configuration
+    const handleSubmit = async () => {
+      // Comprehensive validation
+      if (!selectedConfig.ram || !selectedConfig.storage || !selectedConfig.os) {
+        alert('Please select RAM, Storage, and Operating System');
+        return;
+      }
   
-    if (!hubId) {
-      alert('Invalid hub selection. Redirecting to home.');
-      navigate('/');
-      return;
-    }
+      if (!hubId) {
+        alert('Invalid hub selection. Please start your booking again.');
+        navigate('/');
+        return;
+      }
   
-    // Update currentBooking state
-    const updatedBooking = {
-      ...currentBooking,
-      formData: {
-        ...currentBooking.formData,
-        selectedTools: selectedConfiguration,
-      },
-      currentStep: 'confirmation',
-      isInFinalPage: false,
+      setLoading(true);
+  
+      try {
+        // Prepare the updated booking info
+        const updatedBooking = {
+          ...currentBooking,
+          configDetails: {
+            ram: selectedConfig.ram,
+            storage: selectedConfig.storage,
+            os: selectedConfig.os
+          },
+          hubDetails: {
+            ...currentBooking.hubDetails,
+            id: hubId // Ensure hubId is preserved
+          },
+          isInFinalPage: false
+        };
+  
+        // Validate booking before updating
+  
+        // Update the booking store
+        updateCurrentBooking(updatedBooking);
+        
+        // Update the global currentBookingInfo 
+        window.currentBookingInfo = updatedBooking;
+  
+        // Navigate to confirmation page
+        navigate('/confirmation');
+      } catch (error) {
+        alert('An error occurred. Please try again.');
+      } finally {
+        setLoading(false);
+      }
     };
-  
-    // Save to global `currentBookingInfo` and local state
-    updateCurrentBooking(updatedBooking);
-    window.currentBookingInfo = updatedBooking;  // For debugging and finalization
-  
-    setLoading(false);
-    navigate('/confirmation');
-  };
-  
 
   // Get the label of the selected configuration option
   const getSelectedLabel = (category: 'ram' | 'storage' | 'os') => {
@@ -155,17 +188,17 @@ const ToolSelectionPage: React.FC = () => {
           <Card>
             <CardContent>
               <Stack direction="column" spacing={2}>
-                <Stack direction="row" spacing={1}>
+                <Stack direction="row" spacing={1} alignItems="center">
                   <FontAwesomeIcon icon={faMemory} />
-                  <Typography>{getSelectedLabel('ram')}</Typography>
+                  <Typography>RAM: {getSelectedLabel('ram')}</Typography>
                 </Stack>
-                <Stack direction="row" spacing={1}>
+                <Stack direction="row" spacing={1} alignItems="center">
                   <FontAwesomeIcon icon={faHdd} />
-                  <Typography>{getSelectedLabel('storage')}</Typography>
+                  <Typography>Storage: {getSelectedLabel('storage')}</Typography>
                 </Stack>
-                <Stack direction="row" spacing={1}>
+                <Stack direction="row" spacing={1} alignItems="center">
                   <FontAwesomeIcon icon={faDesktop} />
-                  <Typography>{getSelectedLabel('os')}</Typography>
+                  <Typography>OS: {getSelectedLabel('os')}</Typography>
                 </Stack>
               </Stack>
             </CardContent>

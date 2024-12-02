@@ -19,13 +19,13 @@ import {
 const CheckinPage: React.FC = () => {
   const { hubId } = useParams<{ hubId: string }>();
   const navigate = useNavigate();
-  const { currentBooking, updateCurrentBooking, addBookingResult } = useBookingStore();
+  const { currentBooking, updateCurrentBooking } = useBookingStore();
 
   const [formData, setFormData] = useState({
-    fullName: '',
+    name: '',
     email: '',
     phone: '',
-    age: '',
+    ageRange: '',
     visitDay: '',
     startHour: '',
     endHour: '',
@@ -35,10 +35,16 @@ const CheckinPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (currentBooking?.formData?.userDetails) {
+    // Pre-fill form if there's existing booking info
+    if (currentBooking.userDetails?.name) {
       setFormData({
-        ...formData,
-        ...currentBooking.formData.userDetails,
+        name: currentBooking.userDetails.name,
+        email: currentBooking.userDetails.email,
+        phone: currentBooking.userDetails.phone,
+        ageRange: currentBooking.userDetails.ageRange,
+        visitDay: currentBooking.bookingDetails?.bookDate || '',
+        startHour: currentBooking.bookingDetails?.bookStartTime || '',
+        endHour: currentBooking.bookingDetails?.bookEndTime || '',
       });
     }
   }, [currentBooking]);
@@ -49,15 +55,15 @@ const CheckinPage: React.FC = () => {
   };
 
   const validateForm = () => {
-    const { fullName, email, phone, age, visitDay, startHour, endHour } = formData;
+    const { name, email, phone, ageRange, visitDay, startHour, endHour } = formData;
 
-    if (!fullName.trim()) return 'Full Name is required.';
-    if (fullName.length < 3) return 'Full Name must be at least 3 characters.';
+    if (!name.trim()) return 'Full Name is required.';
+    if (name.length < 3) return 'Full Name must be at least 3 characters.';
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!email || !emailRegex.test(email)) return 'Enter a valid email address.';
     const phoneRegex = /^[0-9]{10,15}$/;
     if (!phone || !phoneRegex.test(phone)) return 'Phone must be 10-15 digits.';
-    if (!age) return 'Please select an age range.';
+    if (!ageRange) return 'Please select an age range.';
     if (!visitDay) return 'Visit Day is required.';
     if (!startHour) return 'Start Hour is required.';
     if (!endHour) return 'End Hour is required.';
@@ -76,35 +82,40 @@ const CheckinPage: React.FC = () => {
     setError(null);
     setLoading(true);
 
-    const userDetails = {
-      fullName: formData.fullName,
-      email: formData.email,
-      phone: formData.phone,
-      age: formData.age,
-      visitDay: formData.visitDay,
-      startHour: formData.startHour,
-      endHour: formData.endHour,
-    };
-
     const bookingDetails = {
-      hubId,
-      userDetails,
-      timestamp: new Date().toISOString(),
-      status: 'in_progress',
+      hubDetails: {
+        id: parseInt(hubId || '0'),
+        name: `Hub ${hubId}`,
+      },
+      userDetails: {
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        ageRange: formData.ageRange,
+      },
+      bookingDetails: {
+        bookDate: formData.visitDay,
+        bookStartTime: formData.startHour,
+        bookEndTime: formData.endHour,
+      },
+      configDetails: {
+        ram: '',
+        storage: '',
+        os: '',
+      },
+      paymentDetails: {
+        paymentMode: {
+          payNow: false,
+          payLater: false,
+        },
+      },
       isInFinalPage: false,
     };
 
-    // Update the global state
-    updateCurrentBooking({
-      formData: bookingDetails,
-      currentStep: 'tools',
-      isInFinalPage: false,
-    });
-
-    // Save the booking to bookingHistory and localStorage
-    addBookingResult(bookingDetails);
-
-    // Update the global variable for browser testing
+    // Update global booking info
+    updateCurrentBooking(bookingDetails);
+    
+    // Update window object for compatibility
     window.currentBookingInfo = bookingDetails;
 
     setLoading(false);
@@ -121,8 +132,8 @@ const CheckinPage: React.FC = () => {
         <Stack spacing={3}>
           <TextField
             label="Full Name"
-            name="fullName"
-            value={formData.fullName}
+            name="name"
+            value={formData.name}
             onChange={handleInputChange}
             fullWidth
             required
@@ -148,8 +159,8 @@ const CheckinPage: React.FC = () => {
           <FormControl fullWidth required>
             <InputLabel>Age Range</InputLabel>
             <Select
-              name="age"
-              value={formData.age}
+              name="ageRange"
+              value={formData.ageRange}
               onChange={handleInputChange}
               label="Age Range"
             >
