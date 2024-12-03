@@ -1,8 +1,8 @@
-export const finalizeBooking = (bookingResult: any) => {
-  window.bookingResults = window.bookingResults || [];
+export const finalizeBooking = (bookingResult: BookingResult) => {
+  window.bookingResults = JSON.parse(sessionStorage.getItem('bookingResults') || '[]');
   window.bookingResults.push(bookingResult);
   window.currentBookingInfo = bookingResult;
 
-  // Save directly to localStorage
-  localStorage.setItem('bookingResults', JSON.stringify(window.bookingResults));
+  sessionStorage.setItem('bookingResults', JSON.stringify(window.bookingResults));
 };
+

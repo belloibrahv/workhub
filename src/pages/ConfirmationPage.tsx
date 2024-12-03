@@ -26,7 +26,6 @@ import {
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useBookingStore } from '../store/booking';
-import { finalizeBooking } from '@/utils/finalizeBooking';
 import { BookingResult } from '@/types/booking';
 
 // Validation Utilities
@@ -38,7 +37,7 @@ const isValidCVV = (cvv: string): boolean => /^[0-9]{3,4}$/.test(cvv);
 
 const ConfirmationPage: React.FC = () => {
   const navigate = useNavigate();
-  const { currentBooking, updateCurrentBooking, addBookingResult } = useBookingStore();
+  const { currentBooking, addBookingResult } = useBookingStore();
 
   const [activeStep, setActiveStep] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState<'now' | 'later' | null>(null);
@@ -56,47 +55,31 @@ const ConfirmationPage: React.FC = () => {
       return;
     }
 
-    // Initialize global variables or refresh them on ConfirmationPage load
+    // Initialize global variables
     window.currentBookingInfo = {
       ...currentBooking,
       isInFinalPage: true,
     };
 
-    window.bookingResults = window.bookingResults || JSON.parse(localStorage.getItem('bookingResults') || '[]');
+    window.bookingResults = JSON.parse(sessionStorage.getItem('bookingResults') || '[]');
   }, [currentBooking, navigate]);
-
-  useEffect(() => {
-    // Update global state when payment method changes
-    if (paymentMethod) {
-      window.currentBookingInfo = {
-        ...window.currentBookingInfo,
-        paymentDetails: {
-          paymentMode: { payNow: paymentMethod === 'now', payLater: paymentMethod === 'later' },
-        },
-      };
-    }
-  }, [paymentMethod]);
 
   const handlePaymentMethodSelect = (method: 'now' | 'later') => {
     setPaymentMethod(method);
-
-    // Update payment method in global state
     window.currentBookingInfo = {
       ...window.currentBookingInfo,
       paymentDetails: {
         paymentMode: { payNow: method === 'now', payLater: method === 'later' },
-        ...(method === 'now' && { cardDetails: {} }), // Initialize cardDetails for "Pay Now"
+        ...(method === 'now' && { cardDetails: {} }),
       },
     };
-
     setActiveStep(1);
-  }; 
+  };
 
   const handlePaymentDetailsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setPaymentDetails((prev) => ({ ...prev, [name]: value }));
 
-    // Update card details in global state in real-time
     if (paymentMethod === 'now') {
       window.currentBookingInfo = {
         ...window.currentBookingInfo,
@@ -133,61 +116,40 @@ const ConfirmationPage: React.FC = () => {
     setErrorMessage('');
     setLoading(true);
   
-    if (!currentBooking.hubDetails?.id || !currentBooking.configDetails) {
-      setErrorMessage('Incomplete booking details. Please try again.');
-      setLoading(false);
-      return;
-    }
-  
     if (!validatePaymentDetails()) {
       setLoading(false);
       return;
     }
   
     const bookingResult: BookingResult = {
-      ...currentBooking,
-      paymentDetails: {
-        paymentMode: { payNow: paymentMethod === 'now', payLater: paymentMethod === 'later' },
-        ...(paymentMethod === 'now' && {
-          cardDetails: {
-            cardNumber: paymentDetails.cardNumber,
-            expiryDate: paymentDetails.expiryDate,
-            cvv: paymentDetails.cvv,
-          },
-        }),
-      },
+      ...window.currentBookingInfo,
+      paymentDetails: window.currentBookingInfo.paymentDetails,
     };
+    delete bookingResult.isInFinalPage; // Remove isInFinalPage for storage
   
     try {
-      // Synchronize global bookingResults with localStorage before making changes
-      window.bookingResults = JSON.parse(localStorage.getItem('bookingResults') || '[]');
+      const existingResults: BookingResult[] = JSON.parse(sessionStorage.getItem('bookingResults') || '[]');
   
-      // Check for duplicates
-      const isDuplicate = window.bookingResults.some(
-        (existingBooking: BookingResult) =>
-          existingBooking.hubDetails.id === bookingResult.hubDetails.id &&
-          existingBooking.bookingDetails.bookDate === bookingResult.bookingDetails.bookDate &&
-          existingBooking.bookingDetails.bookStartTime === bookingResult.bookingDetails.bookStartTime
+      // Check for duplicates and replace the old booking if necessary
+      const updatedResults = existingResults.filter(
+        (existingBooking) =>
+          !(
+            existingBooking.hubDetails.id === bookingResult.hubDetails.id &&
+            existingBooking.bookingDetails.bookDate === bookingResult.bookingDetails.bookDate &&
+            existingBooking.bookingDetails.bookStartTime === bookingResult.bookingDetails.bookStartTime
+          )
       );
   
-      if (!isDuplicate) {
-        // Add booking to the global state and persist it
-        window.bookingResults.push(bookingResult);
-        localStorage.setItem('bookingResults', JSON.stringify(window.bookingResults));
-      } else {
-        console.warn('Duplicate booking detected. Skipping entry.');
-      }
-  
-      // Finalize booking in the store
-      await finalizeBooking(bookingResult);
+      updatedResults.push(bookingResult); // Add the latest booking
+      sessionStorage.setItem('bookingResults', JSON.stringify(updatedResults));
       addBookingResult(bookingResult);
   
-      window.currentBookingInfo = bookingResult;
+      // Navigate to history after confirming successful storage
+      setLoading(false); // Explicitly stop loading before navigation
       navigate('/history', { replace: true });
     } catch (error) {
-      console.error('Finalize Booking Error:', error);
+      console.error('Error finalizing booking:', error);
       setErrorMessage('Failed to save booking. Please try again.');
-    } finally {
       setLoading(false);
     }
   };
@@ -213,7 +175,6 @@ const ConfirmationPage: React.FC = () => {
         <Typography variant="h4" gutterBottom>
           Booking Confirmation
         </Typography>
-
         <Stepper activeStep={activeStep} alternativeLabel>
           {['Select Payment Method', 'Payment Details'].map((label) => (
             <Step key={label}>

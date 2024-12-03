@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -26,6 +26,7 @@ import { useBookingStore } from '../store/booking';
 
 const BookingHistoryPage: React.FC = () => {
   const { bookingHistory } = useBookingStore();
+
   const [filter, setFilter] = useState({
     hubId: 'all',
     paymentStatus: 'all',
@@ -33,6 +34,11 @@ const BookingHistoryPage: React.FC = () => {
     endDate: '',
   });
   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
+
+  // Reset window.currentBookingInfo when the page loads
+  useEffect(() => {
+    window.currentBookingInfo = { isInFinalPage: false }; // Reset to desired state
+  }, []);
 
   const filteredBookings = useMemo(() => {
     const seen = new Set(); // To keep track of unique bookings

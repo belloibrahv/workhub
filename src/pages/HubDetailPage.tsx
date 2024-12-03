@@ -35,8 +35,13 @@ const HubDetailPage: React.FC = () => {
                     price: hub.price,
                 },
             };
+    
+            // Persist to sessionStorage instead of sessionStorage
+            const bookingResults = JSON.parse(sessionStorage.getItem('bookingResults') || '[]');
+            sessionStorage.setItem('bookingResults', JSON.stringify(bookingResults));
         }
     }, [hub]);
+    
 
     if (!hub) {
         return (

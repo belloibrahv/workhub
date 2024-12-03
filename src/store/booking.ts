@@ -1,9 +1,9 @@
 import { create } from 'zustand';
 import { BookingResult, CurrentBookingInfo } from '@/types/booking';
 
-// Load initial data from localStorage
+// Load initial data from sessionStorage
 const loadBookingHistory = (): BookingResult[] => {
-  const storedData = localStorage.getItem('bookingResults');
+  const storedData = sessionStorage.getItem('bookingResults');
   return storedData ? JSON.parse(storedData) : [];
 };
 
@@ -33,21 +33,21 @@ export const useBookingStore = create<BookingStore>((set) => ({
     })),
     addBookingResult: (result) =>
       set((state) => {
-        const isDuplicate = state.bookingHistory.some(
-          (existingBooking) =>
+        const isDuplicate = window.bookingResults.some(
+          (existingBooking: BookingResult) =>
             existingBooking.hubDetails.id === result.hubDetails.id &&
             existingBooking.bookingDetails.bookDate === result.bookingDetails.bookDate &&
             existingBooking.bookingDetails.bookStartTime === result.bookingDetails.bookStartTime &&
             existingBooking.bookingDetails.bookEndTime === result.bookingDetails.bookEndTime
         );
     
-        if (isDuplicate) {
-          console.warn("Duplicate booking detected. Skipping addition.");
-          return state; // Return without updating
+        if (!isDuplicate) {
+          window.bookingResults.push(result);
+          sessionStorage.setItem('bookingResults', JSON.stringify(window.bookingResults));
         }
     
         const updatedHistory = [...state.bookingHistory, result];
-        localStorage.setItem('bookingResults', JSON.stringify(updatedHistory));
+        sessionStorage.setItem('bookingResults', JSON.stringify(updatedHistory));
         return { bookingHistory: updatedHistory };
-      }), 
+      }),     
 }));
