@@ -1,7 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useBookingStore } from '../store/booking';
-import { Box, Button, Typography, Card, CardContent, Stack, CircularProgress } from '@mui/material';
+import {
+  Box,
+  Button,
+  Typography,
+  Card,
+  CardContent,
+  Stack,
+  CircularProgress,
+} from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faMemory, faHdd, faDesktop } from '@fortawesome/free-solid-svg-icons';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
@@ -39,24 +47,31 @@ const ToolSelectionPage: React.FC = () => {
   });
   const [loading, setLoading] = useState(false);
 
-  // Load previously selected configurations (if available)
+  // Load existing configuration or initialize defaults
   useEffect(() => {
-    if (currentBooking?.configDetails) {
-      setSelectedConfig({
-        ram: currentBooking.configDetails.ram || '',
-        storage: currentBooking.configDetails.storage || '',
-        os: currentBooking.configDetails.os || '',
-      });
-    }
-  }, [currentBooking]);
+    const existingBooking = window.currentBookingInfo || {};
+    const { configDetails = {} } = existingBooking;
 
-  // Sync real-time updates to global booking info
+    setSelectedConfig({
+      ram: configDetails.ram || '',
+      storage: configDetails.storage || '',
+      os: configDetails.os || '',
+    });
+
+    // Ensure global variable includes hub and user details
+    window.currentBookingInfo = {
+      ...existingBooking,
+      hubDetails: existingBooking.hubDetails || { id: hubId, name: `Hub ${hubId}` },
+    };
+  }, [hubId]);
+
+  // Sync selected configuration to global variable in real-time
   useEffect(() => {
     window.currentBookingInfo = {
-      ...currentBooking,
+      ...window.currentBookingInfo,
       configDetails: selectedConfig,
     };
-  }, [selectedConfig, currentBooking]);
+  }, [selectedConfig]);
 
   // Handle configuration selection
   const handleSelect = (category: 'ram' | 'storage' | 'os', value: string) => {
@@ -66,7 +81,7 @@ const ToolSelectionPage: React.FC = () => {
     }));
   };
 
-  // Submit the selected configuration
+  // Submit configuration and navigate to confirmation page
   const handleSubmit = async () => {
     if (!selectedConfig.ram || !selectedConfig.storage || !selectedConfig.os) {
       alert('Please select RAM, Storage, and Operating System.');
@@ -82,37 +97,33 @@ const ToolSelectionPage: React.FC = () => {
     setLoading(true);
     try {
       const updatedBooking = {
-        ...currentBooking,
+        ...window.currentBookingInfo,
         configDetails: selectedConfig,
-        hubDetails: {
-          ...currentBooking.hubDetails,
-          id: hubId, // Ensure hubId is preserved
-        },
         isInFinalPage: false,
       };
 
-      // Update booking store and global variable
+      // Update store and global state
       updateCurrentBooking(updatedBooking);
       window.currentBookingInfo = updatedBooking;
 
       // Navigate to confirmation page
       navigate('/confirmation');
     } catch (error) {
-      console.error('An error occurred:', error);
+      console.error('Error during submission:', error);
       alert('An error occurred. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  // Get the label of the selected configuration option
+  // Get the label of a selected configuration
   const getSelectedLabel = (category: 'ram' | 'storage' | 'os') => {
     const selectedValue = selectedConfig[category];
     const option = CONFIGURATIONS[category].find((opt) => opt.value === selectedValue);
     return option ? option.label : 'Not Selected';
   };
 
-  // Render configuration sections
+  // Render configuration section
   const renderConfigSection = (
     title: string,
     options: typeof CONFIGURATIONS.ram,
@@ -168,12 +179,10 @@ const ToolSelectionPage: React.FC = () => {
             </CardContent>
           </Card>
         </Box>
-
         <Box sx={{ flex: 2 }}>
           {renderConfigSection('RAM', CONFIGURATIONS.ram, 'ram')}
           {renderConfigSection('Storage', CONFIGURATIONS.storage, 'storage')}
           {renderConfigSection('Operating System', CONFIGURATIONS.os, 'os')}
-
           <Button
             variant="contained"
             color="primary"

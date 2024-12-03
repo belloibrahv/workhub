@@ -22,6 +22,7 @@ import {
   CheckCircle as CheckCircleIcon,
   LocationOn as LocationOnIcon,
   DevicesOther as DevicesIcon,
+  ArrowBack as ArrowBackIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useBookingStore } from '../store/booking';
@@ -54,16 +55,15 @@ const ConfirmationPage: React.FC = () => {
       navigate('/');
       return;
     }
-  
+
     // Initialize global variables or refresh them on ConfirmationPage load
-    window.currentBookingInfo = { 
-      ...currentBooking, 
-      isInFinalPage: true 
+    window.currentBookingInfo = {
+      ...currentBooking,
+      isInFinalPage: true,
     };
-    
+
     window.bookingResults = window.bookingResults || JSON.parse(localStorage.getItem('bookingResults') || '[]');
   }, [currentBooking, navigate]);
-  
 
   useEffect(() => {
     // Update global state when payment method changes
@@ -79,12 +79,36 @@ const ConfirmationPage: React.FC = () => {
 
   const handlePaymentMethodSelect = (method: 'now' | 'later') => {
     setPaymentMethod(method);
+
+    // Update payment method in global state
+    window.currentBookingInfo = {
+      ...window.currentBookingInfo,
+      paymentDetails: {
+        paymentMode: { payNow: method === 'now', payLater: method === 'later' },
+        ...(method === 'now' && { cardDetails: {} }), // Initialize cardDetails for "Pay Now"
+      },
+    };
+
     setActiveStep(1);
-  };
+  }; 
 
   const handlePaymentDetailsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setPaymentDetails((prev) => ({ ...prev, [name]: value }));
+
+    // Update card details in global state in real-time
+    if (paymentMethod === 'now') {
+      window.currentBookingInfo = {
+        ...window.currentBookingInfo,
+        paymentDetails: {
+          ...window.currentBookingInfo.paymentDetails,
+          cardDetails: {
+            ...window.currentBookingInfo.paymentDetails?.cardDetails,
+            [name]: value,
+          },
+        },
+      };
+    }
   };
 
   const validatePaymentDetails = (): boolean => {
@@ -108,18 +132,18 @@ const ConfirmationPage: React.FC = () => {
   const handlePaymentSubmit = async () => {
     setErrorMessage('');
     setLoading(true);
-
+  
     if (!currentBooking.hubDetails?.id || !currentBooking.configDetails) {
       setErrorMessage('Incomplete booking details. Please try again.');
       setLoading(false);
       return;
     }
-
+  
     if (!validatePaymentDetails()) {
       setLoading(false);
       return;
     }
-
+  
     const bookingResult: BookingResult = {
       ...currentBooking,
       paymentDetails: {
@@ -132,16 +156,33 @@ const ConfirmationPage: React.FC = () => {
           },
         }),
       },
-      isInFinalPage: true,
     };
-
+  
     try {
+      // Synchronize global bookingResults with localStorage before making changes
+      window.bookingResults = JSON.parse(localStorage.getItem('bookingResults') || '[]');
+  
+      // Check for duplicates
+      const isDuplicate = window.bookingResults.some(
+        (existingBooking: BookingResult) =>
+          existingBooking.hubDetails.id === bookingResult.hubDetails.id &&
+          existingBooking.bookingDetails.bookDate === bookingResult.bookingDetails.bookDate &&
+          existingBooking.bookingDetails.bookStartTime === bookingResult.bookingDetails.bookStartTime
+      );
+  
+      if (!isDuplicate) {
+        // Add booking to the global state and persist it
+        window.bookingResults.push(bookingResult);
+        localStorage.setItem('bookingResults', JSON.stringify(window.bookingResults));
+      } else {
+        console.warn('Duplicate booking detected. Skipping entry.');
+      }
+  
+      // Finalize booking in the store
       await finalizeBooking(bookingResult);
       addBookingResult(bookingResult);
-
+  
       window.currentBookingInfo = bookingResult;
-      window.bookingResults.push(bookingResult);
-
       navigate('/history', { replace: true });
     } catch (error) {
       console.error('Finalize Booking Error:', error);
@@ -150,6 +191,7 @@ const ConfirmationPage: React.FC = () => {
       setLoading(false);
     }
   };
+  
 
   const renderToolConfiguration = () => (
     <Grid container spacing={2}>
@@ -182,6 +224,17 @@ const ConfirmationPage: React.FC = () => {
 
         <Card sx={{ mt: 3 }}>
           <CardContent>
+            {/* Go Back to Tool Selection */}
+            <Box sx={{ display: 'flex', justifyContent: 'flex-start', mb: 2 }}>
+              <Button
+                variant="outlined"
+                startIcon={<ArrowBackIcon />}
+                onClick={() => navigate(`/tools/${currentBooking.hubDetails.id}`)}
+              >
+                Back to Tool Selection
+              </Button>
+            </Box>
+
             {/* Hub Details */}
             <Box sx={{ mb: 2 }}>
               <Typography variant="h6" gutterBottom>

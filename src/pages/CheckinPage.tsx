@@ -10,6 +10,7 @@ const CheckinPage: React.FC = () => {
   const { hubId } = useParams<{ hubId: string }>();
   const navigate = useNavigate();
   const { currentBooking, updateCurrentBooking } = useBookingStore();
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -19,34 +20,50 @@ const CheckinPage: React.FC = () => {
     startHour: '',
     endHour: '',
   });
+
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // Pre-fill form if existing booking info is available
-    if (currentBooking.userDetails?.name) {
-      setFormData({
-        name: currentBooking.userDetails.name,
-        email: currentBooking.userDetails.email,
-        phone: currentBooking.userDetails.phone,
-        ageRange: currentBooking.userDetails.ageRange,
-        visitDay: currentBooking.bookingDetails?.bookDate || '',
-        startHour: currentBooking.bookingDetails?.bookStartTime || '',
-        endHour: currentBooking.bookingDetails?.bookEndTime || '',
-      });
+    if (!hubId) {
+      setError('Invalid hub selection. Please go back and select a hub.');
+      return;
     }
-  }, [currentBooking]);
+
+    // Initialize form with existing booking data or maintain hub details from previous page
+    const existingBooking = window.currentBookingInfo || {};
+    const { userDetails = {}, bookingDetails = {} } = existingBooking;
+
+    setFormData({
+      name: userDetails.name || '',
+      email: userDetails.email || '',
+      phone: userDetails.phone || '',
+      ageRange: userDetails.ageRange || '',
+      visitDay: bookingDetails.bookDate || '',
+      startHour: bookingDetails.bookStartTime || '',
+      endHour: bookingDetails.bookEndTime || '',
+    });
+
+    // Ensure global variable includes hub details
+    window.currentBookingInfo = {
+      ...existingBooking,
+      hubDetails: existingBooking.hubDetails || {
+        id: hubId,
+        name: `Hub ${hubId}`,
+      },
+    };
+  }, [hubId]);
 
   useEffect(() => {
     // Update global booking info in real-time
     window.currentBookingInfo = {
-      ...currentBooking,
+      ...window.currentBookingInfo,
       userDetails: {
-        ...currentBooking.userDetails,
+        ...window.currentBookingInfo?.userDetails,
         ...formData,
       },
     };
-  }, [formData, currentBooking]);
+  }, [formData]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -80,16 +97,10 @@ const CheckinPage: React.FC = () => {
     setError(null);
     setLoading(true);
 
-    const bookingDetails = {
-      hubDetails: {
-        id: parseInt(hubId || '0'),
-        name: `Hub ${hubId}`,
-      },
+    const updatedBooking = {
+      ...window.currentBookingInfo,
       userDetails: {
-        name: formData.name,
-        email: formData.email,
-        phone: formData.phone,
-        ageRange: formData.ageRange,
+        ...formData,
       },
       bookingDetails: {
         bookDate: formData.visitDay,
@@ -99,13 +110,23 @@ const CheckinPage: React.FC = () => {
       isInFinalPage: false,
     };
 
-    // Update booking store and global object
-    updateCurrentBooking(bookingDetails);
-    window.currentBookingInfo = bookingDetails;
+    updateCurrentBooking(updatedBooking);
+    window.currentBookingInfo = updatedBooking;
 
     setLoading(false);
     navigate(`/tools/${hubId}`);
   };
+
+  if (error) {
+    return (
+      <Box sx={{ padding: 4, textAlign: 'center' }}>
+        <Alert severity="error">{error}</Alert>
+        <Button variant="contained" sx={{ marginTop: 2 }} onClick={() => navigate('/')}>
+          Back to Home
+        </Button>
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ padding: 4, maxWidth: 600, margin: 'auto' }}>

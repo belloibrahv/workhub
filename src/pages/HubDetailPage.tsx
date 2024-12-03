@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Box, Typography, Button, Card, CardMedia, CardContent, Divider, Chip } from '@mui/material';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
@@ -23,6 +23,20 @@ const HubDetailPage: React.FC = () => {
 
     // Find the selected hub by ID
     const hub = HUBS.find((h) => h.id === hubId);
+
+    useEffect(() => {
+        if (hub) {
+            window.currentBookingInfo = {
+                ...window.currentBookingInfo,
+                hubDetails: {
+                    id: hub.id,
+                    name: hub.name,
+                    location: hub.location,
+                    price: hub.price,
+                },
+            };
+        }
+    }, [hub]);
 
     if (!hub) {
         return (

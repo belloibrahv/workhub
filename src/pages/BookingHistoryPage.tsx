@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Box,
   Typography,
@@ -17,8 +17,6 @@ import {
   Alert,
 } from '@mui/material';
 import {
-  Filter as FilterIcon,
-  CalendarToday as CalendarIcon,
   CheckCircle as PaidIcon,
   PendingOutlined as PendingIcon,
   LocationOn as LocationIcon,
@@ -36,53 +34,40 @@ const BookingHistoryPage: React.FC = () => {
   });
   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
 
-  useEffect(() => {
-    // Clear only the current booking, but keep booking results intact
-    window.currentBookingInfo = null;
-    window.bookingResults = JSON.parse(localStorage.getItem('bookingResults') || '[]');
-  }, []);
-  
-  // Rest of the component remains the same as in the previous implementation
   const filteredBookings = useMemo(() => {
+    const seen = new Set(); // To keep track of unique bookings
+    
     return bookingHistory
       .filter((booking) => {
-        const isValidBooking =
-          booking?.timestamp &&
-          booking?.formData?.hubId &&
-          booking?.formData?.userDetails?.fullName &&
-          booking?.formData?.userDetails?.visitDay &&
-          booking?.formData?.userDetails?.startHour &&
-          booking?.formData?.userDetails?.endHour;
-
-        if (!isValidBooking) return false;
-
-        const bookingDate = new Date(booking.timestamp);
-
+        const bookingId = booking.id || `${booking.timestamp}-${booking.hubDetails?.id}`;
+        if (seen.has(bookingId)) return false; // Skip if already seen
+        seen.add(bookingId); // Mark this booking as seen
+        
         // Hub ID filter
-        if (filter.hubId !== 'all' && booking.formData?.hubId !== filter.hubId) return false;
-
+        if (filter.hubId !== 'all' && booking.hubDetails?.id !== filter.hubId) return false;
+        
         // Payment status filter
-        const isPaid = booking.formData?.paymentDetails?.paymentMode?.payNow;
+        const isPaid = booking.paymentDetails?.paymentMode?.payNow;
         if (
           filter.paymentStatus !== 'all' &&
           (filter.paymentStatus === 'Paid' ? !isPaid : isPaid)
         )
           return false;
-
+        
         // Date range filter
+        const bookingDate = new Date(booking.timestamp || Date.now());
         if (filter.startDate && bookingDate < new Date(filter.startDate)) return false;
         if (filter.endDate && bookingDate > new Date(filter.endDate)) return false;
-
+  
         return true;
       })
       .sort((a, b) => {
-        const dateA = new Date(a.timestamp);
-        const dateB = new Date(b.timestamp);
-        return sortOrder === 'newest'
-          ? dateB.getTime() - dateA.getTime()
-          : dateA.getTime() - dateB.getTime();
+        const dateA = new Date(a.timestamp || Date.now());
+        const dateB = new Date(b.timestamp || Date.now());
+        return dateB.getTime() - dateA.getTime();
       });
-  }, [bookingHistory, filter, sortOrder]);
+  }, [bookingHistory, filter]);
+  
 
   const handleFilterChange = (e: React.ChangeEvent<{ name?: string; value: unknown }>) => {
     const { name, value } = e.target;
@@ -91,14 +76,14 @@ const BookingHistoryPage: React.FC = () => {
     }
   };
 
-  const renderToolChips = (tools: any[] = []) => {
-    if (!tools || tools.length === 0) {
-      return (
-        <Typography variant="body2" color="text.secondary">
-          No tools selected
-        </Typography>
-      );
-    }
+  const renderToolChips = (configDetails: any) => {
+    if (!configDetails) return <Typography variant="body2" color="text.secondary">No configuration selected</Typography>;
+
+    const tools = [
+      { type: 'RAM', label: configDetails.ram },
+      { type: 'Storage', label: configDetails.storage },
+      { type: 'OS', label: configDetails.os }
+    ].filter(tool => tool.label);
 
     return (
       <Grid container spacing={1}>
@@ -122,11 +107,11 @@ const BookingHistoryPage: React.FC = () => {
         <Typography variant="h4" gutterBottom>
           Booking History
         </Typography>
-
+        
         {/* Filter Section */}
         <Paper elevation={1} sx={{ p: 2, mb: 3 }}>
           <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} sm={3}>
+            <Grid item xs={12} sm={4}>
               <FormControl fullWidth variant="outlined" size="small">
                 <InputLabel>Hub Location</InputLabel>
                 <Select
@@ -134,17 +119,15 @@ const BookingHistoryPage: React.FC = () => {
                   value={filter.hubId}
                   label="Hub Location"
                   onChange={handleFilterChange}
-                  startAdornment={<LocationIcon />}
                 >
                   <MenuItem value="all">All Hubs</MenuItem>
-                  <MenuItem value="lekki">Lekki Hub</MenuItem>
-                  <MenuItem value="yaba">Yaba Hub</MenuItem>
-                  <MenuItem value="sango">Sango Hub</MenuItem>
+                  <MenuItem value={1}>Lekki Hub</MenuItem>
+                  <MenuItem value={2}>Yaba Hub</MenuItem>
+                  <MenuItem value={3}>Sango Hub</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
-
-            <Grid item xs={12} sm={3}>
+            <Grid item xs={12} sm={4}>
               <FormControl fullWidth variant="outlined" size="small">
                 <InputLabel>Payment Status</InputLabel>
                 <Select
@@ -159,8 +142,7 @@ const BookingHistoryPage: React.FC = () => {
                 </Select>
               </FormControl>
             </Grid>
-
-            <Grid item xs={12} sm={3}>
+            <Grid item xs={12} sm={4}>
               <TextField
                 name="startDate"
                 label="Start Date"
@@ -170,20 +152,6 @@ const BookingHistoryPage: React.FC = () => {
                 size="small"
                 InputLabelProps={{ shrink: true }}
                 value={filter.startDate}
-                onChange={handleFilterChange}
-              />
-            </Grid>
-
-            <Grid item xs={12} sm={3}>
-              <TextField
-                name="endDate"
-                label="End Date"
-                type="date"
-                fullWidth
-                variant="outlined"
-                size="small"
-                InputLabelProps={{ shrink: true }}
-                value={filter.endDate}
                 onChange={handleFilterChange}
               />
             </Grid>
@@ -200,72 +168,67 @@ const BookingHistoryPage: React.FC = () => {
             <Card key={index} sx={{ mb: 2 }}>
               <CardContent>
                 <Grid container spacing={2}>
+                  {/* Hub Details */}
                   <Grid item xs={12} sm={6}>
                     <Typography variant="h6" color="primary">
                       <LocationIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
-                      {booking.formData?.hubId} Hub
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Booked on: {new Date(booking.timestamp).toLocaleString()}
+                      {booking.hubDetails?.name || 'Unknown Hub'}
                     </Typography>
                   </Grid>
 
+                  {/* Payment Status */}
                   <Grid item xs={12} sm={6} textAlign="right">
                     <Chip
-                      icon={
-                        booking.formData?.paymentDetails?.paymentMode?.payNow ? (
-                          <PaidIcon />
-                        ) : (
-                          <PendingIcon />
-                        )
-                      }
-                      label={
-                        booking.formData?.paymentDetails?.paymentMode?.payNow
-                          ? 'Paid'
-                          : 'Pending'
-                      }
-                      color={
-                        booking.formData?.paymentDetails?.paymentMode?.payNow
-                          ? 'success'
-                          : 'warning'
-                      }
+                      icon={booking.paymentDetails?.paymentMode?.payNow ? <PaidIcon /> : <PendingIcon />}
+                      label={booking.paymentDetails?.paymentMode?.payNow ? 'Paid' : 'Pending'}
+                      color={booking.paymentDetails?.paymentMode?.payNow ? 'success' : 'warning'}
                       variant="outlined"
                     />
                   </Grid>
 
-                  <Grid item xs={12}>
-                    <Divider sx={{ my: 1 }} />
-                  </Grid>
-
-                  <Grid item xs={12} md={6}>
+                  {/* User Details */}
+                  <Grid item xs={12} md={4}>
                     <Typography variant="subtitle1">User Details</Typography>
                     <Typography variant="body2">
-                      Name: {booking.formData?.userDetails?.fullName || 'N/A'}
+                      Name: {booking.userDetails?.name || 'N/A'}
                     </Typography>
                     <Typography variant="body2">
-                      Email: {booking.formData?.userDetails?.email || 'N/A'}
+                      Email: {booking.userDetails?.email || 'N/A'}
                     </Typography>
                     <Typography variant="body2">
-                      Phone: {booking.formData?.userDetails?.phone || 'N/A'}
+                      Phone: {booking.userDetails?.phone || 'N/A'}
                     </Typography>
                   </Grid>
 
-                  <Grid item xs={12} md={6}>
-                    <Typography variant="subtitle1">Booking Time</Typography>
+                  {/* Booking Details */}
+                  <Grid item xs={12} md={4}>
+                    <Typography variant="subtitle1">Booking Details</Typography>
                     <Typography variant="body2">
-                      Visit Day: {booking.formData?.userDetails?.visitDay || 'N/A'}
+                      Date: {booking.bookingDetails?.bookDate || 'N/A'}
                     </Typography>
                     <Typography variant="body2">
-                      Start Time: {booking.formData?.userDetails?.startHour || 'N/A'}
+                      Start Time: {booking.bookingDetails?.bookStartTime || 'N/A'}
                     </Typography>
                     <Typography variant="body2">
-                      End Time: {booking.formData?.userDetails?.endHour || 'N/A'}
+                      End Time: {booking.bookingDetails?.bookEndTime || 'N/A'}
                     </Typography>
                   </Grid>
 
+                  {/* Payment Details */}
+                  <Grid item xs={12} md={4}>
+                    <Typography variant="subtitle1">Payment Details</Typography>
+                    <Typography variant="body2">
+                      Payment Mode: {booking.paymentDetails?.paymentMode?.payNow ? 'Pay Now' : 'Pay Later'}
+                    </Typography>
+                    <Typography variant="body2">
+                      Payment Status: {booking.paymentDetails?.paymentMode?.payNow ? 'Completed' : 'Pending'}
+                    </Typography>
+                  </Grid>
+
+                  {/* Configuration Details */}
                   <Grid item xs={12}>
-                    <Typography variant="subtitle1">Selected Tools</Typography>
-                    {renderToolChips(booking.formData?.selectedTools)}
+                    <Typography variant="subtitle1">Configuration Details</Typography>
+                    {renderToolChips(booking.configDetails)}
                   </Grid>
                 </Grid>
               </CardContent>

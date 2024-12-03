@@ -30,7 +30,6 @@ export interface BookingResult {
       cvv: string;
     };
   };
-  isInFinalPage: boolean;
 }
 
 export interface CurrentBookingInfo {
