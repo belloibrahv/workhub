@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -36,7 +36,13 @@ const BookingHistoryPage: React.FC = () => {
   });
   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
 
-  // Filter and validate bookings
+  useEffect(() => {
+    // Clear only the current booking, but keep booking results intact
+    window.currentBookingInfo = null;
+    window.bookingResults = JSON.parse(localStorage.getItem('bookingResults') || '[]');
+  }, []);
+  
+  // Rest of the component remains the same as in the previous implementation
   const filteredBookings = useMemo(() => {
     return bookingHistory
       .filter((booking) => {

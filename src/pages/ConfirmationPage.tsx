@@ -1,27 +1,27 @@
 import React, { useEffect, useState } from 'react';
-import { 
-  Box, 
-  Typography, 
-  Container, 
-  Grid, 
-  Card, 
-  CardContent, 
-  Button, 
-  TextField, 
+import {
+  Box,
+  Typography,
+  Container,
+  Grid,
+  Card,
+  CardContent,
+  Button,
+  TextField,
   Stepper,
   Step,
   StepLabel,
   Chip,
   CircularProgress,
-  Alert
+  Alert,
 } from '@mui/material';
-import { 
-  CreditCard as CreditCardIcon, 
-  Payment as PaymentIcon, 
+import {
+  CreditCard as CreditCardIcon,
+  Payment as PaymentIcon,
   Schedule as ScheduleIcon,
   CheckCircle as CheckCircleIcon,
   LocationOn as LocationOnIcon,
-  DevicesOther as DevicesIcon
+  DevicesOther as DevicesIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useBookingStore } from '../store/booking';
@@ -29,30 +29,16 @@ import { finalizeBooking } from '@/utils/finalizeBooking';
 import { BookingResult } from '@/types/booking';
 
 // Validation Utilities
-const validateCardNumber = (cardNumber: string): boolean => {
-  // Remove all non-digit characters
-  const sanitizedNumber = cardNumber.replace(/\s|\-/g, '');
-  
-  // Check if the number is between 12 and 19 digits long
-  return /^\d{12,19}$/.test(sanitizedNumber);
-};
-
-// Simplified expiry date validation
-const isValidExpiryDate = (expiryDate: string): boolean => {
-  const [year, month] = expiryDate.split('-').map(Number);
-  const expiryDateObj = new Date(year, month - 1);
-  return expiryDateObj > new Date();
-};
-
-// Simplified CVV validation
-const isValidCVV = (cvv: string): boolean => {
-  return /^\d{3,4}$/.test(cvv);
-};
+const validateCardNumber = (cardNumber: string): boolean =>
+  /^[0-9]{12,19}$/.test(cardNumber.replace(/\s|\-/g, ''));
+const isValidExpiryDate = (expiryDate: string): boolean =>
+  new Date(expiryDate) > new Date();
+const isValidCVV = (cvv: string): boolean => /^[0-9]{3,4}$/.test(cvv);
 
 const ConfirmationPage: React.FC = () => {
   const navigate = useNavigate();
   const { currentBooking, updateCurrentBooking, addBookingResult } = useBookingStore();
-  
+
   const [activeStep, setActiveStep] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState<'now' | 'later' | null>(null);
   const [paymentDetails, setPaymentDetails] = useState({
@@ -64,213 +50,120 @@ const ConfirmationPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // Ensure we have booking details, redirect if not
-    if (!currentBooking.hubDetails.id) {
+    if (!currentBooking.hubDetails?.id) {
       navigate('/');
       return;
     }
-
-    // Initialize window.currentBookingInfo with current booking
-    window.currentBookingInfo = { ...currentBooking };
+  
+    // Initialize global variables or refresh them on ConfirmationPage load
+    window.currentBookingInfo = { 
+      ...currentBooking, 
+      isInFinalPage: true 
+    };
     
-    // Ensure window.bookingResults exists
-    if (!window.bookingResults) {
-      window.bookingResults = [];
-    }
+    window.bookingResults = window.bookingResults || JSON.parse(localStorage.getItem('bookingResults') || '[]');
   }, [currentBooking, navigate]);
   
+
+  useEffect(() => {
+    // Update global state when payment method changes
+    if (paymentMethod) {
+      window.currentBookingInfo = {
+        ...window.currentBookingInfo,
+        paymentDetails: {
+          paymentMode: { payNow: paymentMethod === 'now', payLater: paymentMethod === 'later' },
+        },
+      };
+    }
+  }, [paymentMethod]);
+
   const handlePaymentMethodSelect = (method: 'now' | 'later') => {
     setPaymentMethod(method);
-    setActiveStep((prevStep) => prevStep + 1);
+    setActiveStep(1);
   };
-  
+
   const handlePaymentDetailsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setPaymentDetails(prev => ({ ...prev, [name]: value }));
+    setPaymentDetails((prev) => ({ ...prev, [name]: value }));
   };
 
-  //   setErrorMessage('');
-  //   setLoading(true);
-  
-  //   if (paymentMethod === 'now') {
-  //     // Validate card details
-  //     if (!validateCardNumber(paymentDetails.cardNumber)) {
-  //       setErrorMessage('Invalid card number. Please check and try again.');
-  //       setLoading(false);
-  //       return;
-  //     }
-  //     const [year, month] = paymentDetails.expiryDate.split('-');
-  //     const expiryDate = new Date(+year, +month - 1);
-  //     if (expiryDate < new Date()) {
-  //       setErrorMessage('Card has expired.');
-  //       setLoading(false);
-  //       return;
-  //     }
-  //     if (!/^\d{3}$/.test(paymentDetails.cvv)) {
-  //       setErrorMessage('Invalid CVV.');
-  //       setLoading(false);
-  //       return;
-  //     }
-  //   }
-  
-  //   try {
-  //     // Prepare booking result with the new structure
-  //     const bookingResult: BookingResult = {
-  //       ...currentBooking,
-  //       paymentDetails: {
-  //         paymentMode: {
-  //           payNow: paymentMethod === 'now',
-  //           payLater: paymentMethod === 'later'
-  //         },
-  //         ...(paymentMethod === 'now' && { 
-  //           cardDetails: {
-  //             cardNumber: paymentDetails.cardNumber,
-  //             expiryDate: paymentDetails.expiryDate,
-  //             cvv: paymentDetails.cvv
-  //           } 
-  //         })
-  //       },
-  //       isInFinalPage: true
-  //     };
-  
-  //     // Finalize booking and add to results
-  //     finalizeBooking(bookingResult);
-  //     addBookingResult(bookingResult);
-      
-  //     // Update global window object
-  //     window.currentBookingInfo = bookingResult;
-      
-  //     // Navigate to history page
-  //     navigate('/history', { replace: true });
-  //   } catch (error) {
-  //     setErrorMessage('Failed to save booking. Please try again.');
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
+  const validatePaymentDetails = (): boolean => {
+    if (paymentMethod === 'now') {
+      if (!validateCardNumber(paymentDetails.cardNumber)) {
+        setErrorMessage('Please enter a valid card number.');
+        return false;
+      }
+      if (!isValidExpiryDate(paymentDetails.expiryDate)) {
+        setErrorMessage('Please enter a valid expiry date.');
+        return false;
+      }
+      if (!isValidCVV(paymentDetails.cvv)) {
+        setErrorMessage('Please enter a valid CVV.');
+        return false;
+      }
+    }
+    return true;
+  };
 
   const handlePaymentSubmit = async () => {
-  
-    // Reset previous error states
     setErrorMessage('');
     setLoading(true);
 
-    setErrorMessage('');
-    setLoading(true);
-    
-    try {
-      // Comprehensive validation of booking details
-      if (!currentBooking.hubDetails?.id) {
-        console.error('Missing hub details');
-        setErrorMessage('Invalid booking: Hub details are missing');
-        setLoading(false);
-        return;
-      }
-  
-      if (!currentBooking.configDetails) {
-        console.error('Missing configuration details');
-        setErrorMessage('Invalid booking: Tool configuration is incomplete');
-        setLoading(false);
-        return;
-      }
+    if (!currentBooking.hubDetails?.id || !currentBooking.configDetails) {
+      setErrorMessage('Incomplete booking details. Please try again.');
+      setLoading(false);
+      return;
+    }
 
-      if (paymentMethod === 'now') {
-        // Validate card details
-        if (!validateCardNumber(paymentDetails.cardNumber)) {
-          setErrorMessage('Please enter a valid card number.');
-          setLoading(false);
-          return;
-        }
+    if (!validatePaymentDetails()) {
+      setLoading(false);
+      return;
+    }
 
-        if (!isValidExpiryDate(paymentDetails.expiryDate)) {
-          setErrorMessage('Please enter a valid expiry date.');
-          setLoading(false);
-          return;
-        }
-
-        if (!isValidCVV(paymentDetails.cvv)) {
-          setErrorMessage('Please enter a valid CVV.');
-          setLoading(false);
-          return;
-        }
-      }
-  
-      // Prepare booking result
-      const bookingResult: BookingResult = {
-        ...currentBooking,
-        paymentDetails: {
-          paymentMode: {
-            payNow: paymentMethod === 'now',
-            payLater: paymentMethod === 'later'
+    const bookingResult: BookingResult = {
+      ...currentBooking,
+      paymentDetails: {
+        paymentMode: { payNow: paymentMethod === 'now', payLater: paymentMethod === 'later' },
+        ...(paymentMethod === 'now' && {
+          cardDetails: {
+            cardNumber: paymentDetails.cardNumber,
+            expiryDate: paymentDetails.expiryDate,
+            cvv: paymentDetails.cvv,
           },
-          ...(paymentMethod === 'now' && { 
-            cardDetails: {
-              cardNumber: paymentDetails.cardNumber,
-              expiryDate: paymentDetails.expiryDate,
-              cvv: paymentDetails.cvv
-            } 
-          })
-        },
-        isInFinalPage: true
-      };
-  
-      // Additional logging
-      console.log('Booking Result:', bookingResult);
-  
-      // Finalize booking
-      try {
-        await finalizeBooking(bookingResult);
-        addBookingResult(bookingResult);
-        
-        // Update global window object
-        window.currentBookingInfo = bookingResult;
-        window.bookingResults = window.bookingResults || [];
-        window.bookingResults.push(bookingResult);
-  
-        // Navigate to history page
-        navigate('/history', { replace: true });
-      } catch (finalizeError) {
-        console.error('Finalize Booking Error:', finalizeError);
-        setErrorMessage('Failed to save booking. Please try again.');
-      }
+        }),
+      },
+      isInFinalPage: true,
+    };
+
+    try {
+      await finalizeBooking(bookingResult);
+      addBookingResult(bookingResult);
+
+      window.currentBookingInfo = bookingResult;
+      window.bookingResults.push(bookingResult);
+
+      navigate('/history', { replace: true });
     } catch (error) {
-      console.error('Unexpected Error:', error);
-      setErrorMessage('An unexpected error occurred. Please try again.');
+      console.error('Finalize Booking Error:', error);
+      setErrorMessage('Failed to save booking. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  const renderToolConfiguration = () => {
-    // This would need to be adjusted based on how tools are now stored in the new structure
-    return (
-      <Grid container spacing={2}>
-        <Grid item xs={12} sm={4}>
-          <Chip 
-            icon={<DevicesIcon />} 
-            label={`RAM: ${currentBooking.configDetails.ram}`} 
-            variant="outlined" 
-          />
-        </Grid>
-        <Grid item xs={12} sm={4}>
-          <Chip 
-            icon={<DevicesIcon />} 
-            label={`Storage: ${currentBooking.configDetails.storage}`} 
-            variant="outlined" 
-          />
-        </Grid>
-        <Grid item xs={12} sm={4}>
-          <Chip 
-            icon={<DevicesIcon />} 
-            label={`OS: ${currentBooking.configDetails.os}`} 
-            variant="outlined" 
-          />
-        </Grid>
+  const renderToolConfiguration = () => (
+    <Grid container spacing={2}>
+      <Grid item xs={12} sm={4}>
+        <Chip icon={<DevicesIcon />} label={`RAM: ${currentBooking.configDetails.ram}`} variant="outlined" />
       </Grid>
-    );
-  };
-
-  const paymentSteps = ['Select Payment Method', 'Payment Details'];
+      <Grid item xs={12} sm={4}>
+        <Chip icon={<DevicesIcon />} label={`Storage: ${currentBooking.configDetails.storage}`} variant="outlined" />
+      </Grid>
+      <Grid item xs={12} sm={4}>
+        <Chip icon={<DevicesIcon />} label={`OS: ${currentBooking.configDetails.os}`} variant="outlined" />
+      </Grid>
+    </Grid>
+  );
 
   return (
     <Container maxWidth="md">
@@ -280,7 +173,7 @@ const ConfirmationPage: React.FC = () => {
         </Typography>
 
         <Stepper activeStep={activeStep} alternativeLabel>
-          {paymentSteps.map((label) => (
+          {['Select Payment Method', 'Payment Details'].map((label) => (
             <Step key={label}>
               <StepLabel>{label}</StepLabel>
             </Step>
@@ -289,6 +182,7 @@ const ConfirmationPage: React.FC = () => {
 
         <Card sx={{ mt: 3 }}>
           <CardContent>
+            {/* Hub Details */}
             <Box sx={{ mb: 2 }}>
               <Typography variant="h6" gutterBottom>
                 <LocationOnIcon sx={{ mr: 1 }} />
@@ -297,6 +191,7 @@ const ConfirmationPage: React.FC = () => {
               <Typography>{currentBooking.hubDetails.name} (ID: {currentBooking.hubDetails.id})</Typography>
             </Box>
 
+            {/* User Details */}
             <Box sx={{ mb: 2 }}>
               <Typography variant="h6" gutterBottom>
                 User Details
@@ -307,6 +202,7 @@ const ConfirmationPage: React.FC = () => {
               <Typography>Age Range: {currentBooking.userDetails.ageRange}</Typography>
             </Box>
 
+            {/* Booking Details */}
             <Box sx={{ mb: 2 }}>
               <Typography variant="h6" gutterBottom>
                 Booking Details
@@ -316,6 +212,7 @@ const ConfirmationPage: React.FC = () => {
               <Typography>End Time: {currentBooking.bookingDetails.bookEndTime}</Typography>
             </Box>
 
+            {/* Tool Configuration */}
             <Box sx={{ mb: 2 }}>
               <Typography variant="h6" gutterBottom>
                 <DevicesIcon sx={{ mr: 1 }} />
@@ -324,19 +221,20 @@ const ConfirmationPage: React.FC = () => {
               {renderToolConfiguration()}
             </Box>
 
+            {/* Payment Steps */}
             {paymentMethod === null && (
               <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
-                <Button 
-                  variant="contained" 
-                  color="primary" 
+                <Button
+                  variant="contained"
+                  color="primary"
                   startIcon={<PaymentIcon />}
                   onClick={() => handlePaymentMethodSelect('now')}
                 >
                   Pay Now
                 </Button>
-                <Button 
-                  variant="outlined" 
-                  color="secondary" 
+                <Button
+                  variant="outlined"
+                  color="secondary"
                   startIcon={<ScheduleIcon />}
                   onClick={() => handlePaymentMethodSelect('later')}
                 >
@@ -346,21 +244,12 @@ const ConfirmationPage: React.FC = () => {
             )}
 
             {paymentMethod === 'now' && (
-              <Box component="form" onSubmit={(e) => {
-                e.preventDefault();
-                handlePaymentSubmit();
-              }}>
+              <Box component="form" onSubmit={(e) => e.preventDefault()}>
                 <Typography variant="h6" sx={{ mt: 2, mb: 1 }}>
                   <CreditCardIcon sx={{ mr: 1 }} />
                   Payment Details
                 </Typography>
-                
-                {errorMessage && (
-                  <Alert severity="error" sx={{ mb: 2 }}>
-                    {errorMessage}
-                  </Alert>
-                )}
-
+                {errorMessage && <Alert severity="error" sx={{ mb: 2 }}>{errorMessage}</Alert>}
                 <Grid container spacing={2}>
                   <Grid item xs={12}>
                     <TextField
@@ -369,9 +258,7 @@ const ConfirmationPage: React.FC = () => {
                       name="cardNumber"
                       value={paymentDetails.cardNumber}
                       onChange={handlePaymentDetailsChange}
-                      variant="outlined"
                       required
-                      inputProps={{ maxLength: 16 }}
                     />
                   </Grid>
                   <Grid item xs={6}>
@@ -382,7 +269,6 @@ const ConfirmationPage: React.FC = () => {
                       type="month"
                       value={paymentDetails.expiryDate}
                       onChange={handlePaymentDetailsChange}
-                      variant="outlined"
                       required
                     />
                   </Grid>
@@ -393,28 +279,22 @@ const ConfirmationPage: React.FC = () => {
                       name="cvv"
                       value={paymentDetails.cvv}
                       onChange={handlePaymentDetailsChange}
-                      variant="outlined"
                       required
-                      inputProps={{ maxLength: 3 }}
                     />
                   </Grid>
                 </Grid>
-
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
-                  <Button 
-                    variant="outlined" 
-                    onClick={() => setPaymentMethod(null)}
-                  >
+                  <Button variant="outlined" onClick={() => setPaymentMethod(null)}>
                     Back to Payment Methods
                   </Button>
-                  <Button 
-                    type="submit" 
-                    variant="contained" 
+                  <Button
+                    variant="contained"
                     color="success"
-                    startIcon={<CheckCircleIcon />}
+                    onClick={handlePaymentSubmit}
                     disabled={loading}
+                    startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <CheckCircleIcon />}
                   >
-                    {loading ? <CircularProgress size={20} color="inherit" /> : 'Confirm Payment'}
+                    {loading ? 'Processing...' : 'Confirm Payment'}
                   </Button>
                 </Box>
               </Box>
@@ -425,14 +305,11 @@ const ConfirmationPage: React.FC = () => {
                 <Typography variant="body1" sx={{ mb: 2 }}>
                   You've chosen to pay later. Your booking is pending.
                 </Typography>
-                <Button 
-                  variant="outlined" 
-                  onClick={() => setPaymentMethod(null)}
-                >
+                <Button variant="outlined" onClick={() => setPaymentMethod(null)}>
                   Back to Payment Methods
                 </Button>
-                <Button 
-                  variant="contained" 
+                <Button
+                  variant="contained"
                   color="primary"
                   sx={{ ml: 2 }}
                   onClick={handlePaymentSubmit}

@@ -2,25 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useBookingStore } from '../store/booking';
 import {
-  Box,
-  Button,
-  TextField,
-  Typography,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  FormHelperText,
-  CircularProgress,
-  Alert,
-  Stack,
+  Box, Button, TextField, Typography, Select, MenuItem, FormControl,
+  InputLabel, CircularProgress, Alert, Stack
 } from '@mui/material';
 
 const CheckinPage: React.FC = () => {
   const { hubId } = useParams<{ hubId: string }>();
   const navigate = useNavigate();
   const { currentBooking, updateCurrentBooking } = useBookingStore();
-
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -30,12 +19,11 @@ const CheckinPage: React.FC = () => {
     startHour: '',
     endHour: '',
   });
-
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // Pre-fill form if there's existing booking info
+    // Pre-fill form if existing booking info is available
     if (currentBooking.userDetails?.name) {
       setFormData({
         name: currentBooking.userDetails.name,
@@ -49,6 +37,17 @@ const CheckinPage: React.FC = () => {
     }
   }, [currentBooking]);
 
+  useEffect(() => {
+    // Update global booking info in real-time
+    window.currentBookingInfo = {
+      ...currentBooking,
+      userDetails: {
+        ...currentBooking.userDetails,
+        ...formData,
+      },
+    };
+  }, [formData, currentBooking]);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -56,7 +55,6 @@ const CheckinPage: React.FC = () => {
 
   const validateForm = () => {
     const { name, email, phone, ageRange, visitDay, startHour, endHour } = formData;
-
     if (!name.trim()) return 'Full Name is required.';
     if (name.length < 3) return 'Full Name must be at least 3 characters.';
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -68,7 +66,6 @@ const CheckinPage: React.FC = () => {
     if (!startHour) return 'Start Hour is required.';
     if (!endHour) return 'End Hour is required.';
     if (startHour >= endHour) return 'End Hour must be later than Start Hour.';
-
     return null;
   };
 
@@ -79,6 +76,7 @@ const CheckinPage: React.FC = () => {
       setError(validationError);
       return;
     }
+
     setError(null);
     setLoading(true);
 
@@ -98,24 +96,11 @@ const CheckinPage: React.FC = () => {
         bookStartTime: formData.startHour,
         bookEndTime: formData.endHour,
       },
-      configDetails: {
-        ram: '',
-        storage: '',
-        os: '',
-      },
-      paymentDetails: {
-        paymentMode: {
-          payNow: false,
-          payLater: false,
-        },
-      },
       isInFinalPage: false,
     };
 
-    // Update global booking info
+    // Update booking store and global object
     updateCurrentBooking(bookingDetails);
-    
-    // Update window object for compatibility
     window.currentBookingInfo = bookingDetails;
 
     setLoading(false);
@@ -170,7 +155,6 @@ const CheckinPage: React.FC = () => {
               <MenuItem value="26-30">26-30</MenuItem>
               <MenuItem value="31+">31 and above</MenuItem>
             </Select>
-            <FormHelperText>Age range is required.</FormHelperText>
           </FormControl>
           <TextField
             label="Visit Day"

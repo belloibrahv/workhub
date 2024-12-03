@@ -31,14 +31,14 @@ export const useBookingStore = create<BookingStore>((set) => ({
     set((state) => ({
       currentBooking: { ...state.currentBooking, ...data },
     })),
-  addBookingResult: (result) =>
-    set((state) => {
-      const updatedHistory = [...state.bookingHistory, result];
-      
-      // Sync with storage and global variable
-      localStorage.setItem('bookingResults', JSON.stringify(updatedHistory));
-      window.bookingResults = updatedHistory;
-
-      return { bookingHistory: updatedHistory };
-    }),
+    addBookingResult: (result) =>
+      set((state) => {
+        const updatedHistory = [...state.bookingHistory, result];
+        
+        // Sync state globally and persist in localStorage
+        window.bookingResults = updatedHistory;
+        localStorage.setItem('bookingResults', JSON.stringify(updatedHistory));
+        
+        return { bookingHistory: updatedHistory };
+      }),
 }));
