@@ -67,12 +67,17 @@ const ToolSelectionPage: React.FC = () => {
 
   // Sync selected configuration to global variable in real-time
   useEffect(() => {
+    const { userDetails, ...restBookingInfo } = window.currentBookingInfo || {};
+    const { visitDay, startHour, endHour, ...filteredUserDetails } = userDetails || {};
+  
     window.currentBookingInfo = {
-      ...window.currentBookingInfo,
+      ...restBookingInfo,
+      userDetails: filteredUserDetails, // Exclude specific fields
       configDetails: selectedConfig,
       isInFinalPage: false,
     };
   }, [selectedConfig]);
+  
 
   // Handle configuration selection
   const handleSelect = (category: 'ram' | 'storage' | 'os', value: string) => {
@@ -88,26 +93,29 @@ const ToolSelectionPage: React.FC = () => {
       alert('Please select RAM, Storage, and Operating System.');
       return;
     }
-
+  
     if (!hubId) {
       alert('Invalid hub selection. Please start your booking again.');
       navigate('/');
       return;
     }
-
+  
     setLoading(true);
     try {
+      const { userDetails, ...restBookingInfo } = window.currentBookingInfo || {};
+      const { visitDay, startHour, endHour, ...filteredUserDetails } = userDetails || {};
+  
       const updatedBooking = {
-        ...window.currentBookingInfo,
+        ...restBookingInfo,
+        userDetails: filteredUserDetails,
         configDetails: selectedConfig,
         isInFinalPage: false,
       };
-
+  
       // Update store and global state
       updateCurrentBooking(updatedBooking);
       window.currentBookingInfo = updatedBooking;
-
-      // Navigate to confirmation page
+  
       navigate('/confirmation');
     } catch (error) {
       console.error('Error during submission:', error);
@@ -115,7 +123,7 @@ const ToolSelectionPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  };  
 
   // Get the label of a selected configuration
   const getSelectedLabel = (category: 'ram' | 'storage' | 'os') => {

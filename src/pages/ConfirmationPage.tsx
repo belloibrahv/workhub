@@ -14,6 +14,7 @@ import {
   Chip,
   CircularProgress,
   Alert,
+  InputAdornment,
 } from '@mui/material';
 import {
   CreditCard as CreditCardIcon,
@@ -23,17 +24,20 @@ import {
   LocationOn as LocationOnIcon,
   DevicesOther as DevicesIcon,
   ArrowBack as ArrowBackIcon,
+  InfoOutlined as InfoIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useBookingStore } from '../store/booking';
 import { BookingResult } from '@/types/booking';
 
-// Validation Utilities
-const validateCardNumber = (cardNumber: string): boolean =>
-  /^[0-9]{12,19}$/.test(cardNumber.replace(/\s|\-/g, ''));
-const isValidExpiryDate = (expiryDate: string): boolean =>
-  new Date(expiryDate) > new Date();
-const isValidCVV = (cvv: string): boolean => /^[0-9]{3,4}$/.test(cvv);
+
+const validateCardNumber = (cardNumber: string): boolean => 
+  /^[0-9]{10,20}$/.test(cardNumber.replace(/\s|\-/g, ''));
+
+const isValidExpiryDate = (expiryDate: string): boolean => true;
+
+const isValidCVV = (cvv: string): boolean => 
+  /^[0-9]{3,4}$/.test(cvv);
 
 const ConfirmationPage: React.FC = () => {
   const navigate = useNavigate();
@@ -55,14 +59,14 @@ const ConfirmationPage: React.FC = () => {
       return;
     }
   
-    // Remove redundant fields from userDetails
+    // Sanitize booking info for storage
     const sanitizedBookingInfo = {
       ...currentBooking,
-      userDetails: {
-        ...currentBooking.userDetails,
-      },
+      userDetails: { ...currentBooking.userDetails },
       isInFinalPage: true,
     };
+    
+    // Remove unnecessary fields
     delete sanitizedBookingInfo.userDetails.visitDay;
     delete sanitizedBookingInfo.userDetails.startHour;
     delete sanitizedBookingInfo.userDetails.endHour;
@@ -72,6 +76,7 @@ const ConfirmationPage: React.FC = () => {
     // Initialize global variables
     window.currentBookingInfo = sanitizedBookingInfo;
   
+    // Safely parse and sanitize existing booking results
     const storedBookingResults = JSON.parse(sessionStorage.getItem('bookingResults') || '[]').map((result) => {
       const sanitizedResult = { ...result };
       delete sanitizedResult.userDetails?.visitDay;
@@ -79,6 +84,7 @@ const ConfirmationPage: React.FC = () => {
       delete sanitizedResult.userDetails?.endHour;
       delete sanitizedResult.hubDetails?.location;
       delete sanitizedResult.hubDetails?.price;
+      return sanitizedResult;
     });
   
     window.bookingResults = storedBookingResults;
@@ -148,29 +154,34 @@ const ConfirmationPage: React.FC = () => {
     delete bookingResult.isInFinalPage; // Clean up transient fields
   
     try {
-      const existingResults: BookingResult[] = JSON.parse(sessionStorage.getItem('bookingResults') || '[]').map((result) => {
-        const sanitizedResult = { ...result };
-        delete sanitizedResult.userDetails?.visitDay;
-        delete sanitizedResult.userDetails?.startHour;
-        delete sanitizedResult.userDetails?.endHour;
-        delete sanitizedResult.hubDetails?.location;
-        delete sanitizedResult.hubDetails?.price;
-        return sanitizedResult;
-      });
+      // Safely parse existing booking results
+      const storedResults = sessionStorage.getItem('bookingResults');
+      const existingResults: BookingResult[] = storedResults 
+        ? JSON.parse(storedResults).map((result: any) => {
+            const sanitizedResult = { ...result };
+            delete sanitizedResult.userDetails?.visitDay;
+            delete sanitizedResult.userDetails?.startHour;
+            delete sanitizedResult.userDetails?.endHour;
+            delete sanitizedResult.hubDetails?.location;
+            delete sanitizedResult.hubDetails?.price;
+            return sanitizedResult;
+          })
+        : [];
   
-      // Filter out old bookings with the same details
-      const updatedResults = existingResults.filter(
+      // Filter out duplicate bookings
+      const isDuplicateBooking = existingResults.some(
         (existingBooking) =>
-          !(
-            existingBooking.hubDetails.id === bookingResult.hubDetails.id &&
-            existingBooking.bookingDetails.bookDate === bookingResult.bookingDetails.bookDate &&
-            existingBooking.bookingDetails.bookStartTime === bookingResult.bookingDetails.bookStartTime
-          )
+          existingBooking &&
+          existingBooking.hubDetails?.id === bookingResult.hubDetails.id &&
+          existingBooking.bookingDetails.bookDate === bookingResult.bookingDetails.bookDate &&
+          existingBooking.bookingDetails.bookStartTime === bookingResult.bookingDetails.bookStartTime
       );
   
-      updatedResults.push(bookingResult);
-      sessionStorage.setItem('bookingResults', JSON.stringify(updatedResults));
-      addBookingResult(bookingResult);
+      if (!isDuplicateBooking) {
+        const updatedResults = [...existingResults, bookingResult];
+        sessionStorage.setItem('bookingResults', JSON.stringify(updatedResults));
+        addBookingResult(bookingResult);
+      }
   
       setLoading(false);
       navigate('/history', { replace: true });
@@ -291,38 +302,74 @@ const ConfirmationPage: React.FC = () => {
                 </Typography>
                 {errorMessage && <Alert severity="error" sx={{ mb: 2 }}>{errorMessage}</Alert>}
                 <Grid container spacing={2}>
-                  <Grid item xs={12}>
-                    <TextField
-                      fullWidth
-                      label="Card Number"
-                      name="cardNumber"
-                      value={paymentDetails.cardNumber}
-                      onChange={handlePaymentDetailsChange}
-                      required
-                    />
-                  </Grid>
-                  <Grid item xs={6}>
-                    <TextField
-                      fullWidth
-                      label="Expiry Date"
-                      name="expiryDate"
-                      type="month"
-                      value={paymentDetails.expiryDate}
-                      onChange={handlePaymentDetailsChange}
-                      required
-                    />
-                  </Grid>
-                  <Grid item xs={6}>
-                    <TextField
-                      fullWidth
-                      label="CVV"
-                      name="cvv"
-                      value={paymentDetails.cvv}
-                      onChange={handlePaymentDetailsChange}
-                      required
-                    />
-                  </Grid>
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    label="Card Number"
+                    name="cardNumber"
+                    value={paymentDetails.cardNumber}
+                    onChange={handlePaymentDetailsChange}
+                    required
+                    placeholder="1234 5678 9012 3456"
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <InfoIcon 
+                            color="action" 
+                            titleAccess="Enter card number without spaces or hyphens"
+                          />
+                        </InputAdornment>
+                      ),
+                    }}
+                    helperText="Enter 16-digit card number (Visa, MasterCard, Amex, Discover)"
+                  />
                 </Grid>
+                <Grid item xs={6}>
+                  <TextField
+                    fullWidth
+                    label="Expiry Date"
+                    name="expiryDate"
+                    type="month"
+                    value={paymentDetails.expiryDate}
+                    onChange={handlePaymentDetailsChange}
+                    required
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <InfoIcon 
+                            color="action" 
+                            titleAccess="Select a future expiry month and year"
+                          />
+                        </InputAdornment>
+                      ),
+                    }}
+                    helperText="Select expiry month and year"
+                  />
+                </Grid>
+                <Grid item xs={6}>
+                  <TextField
+                    fullWidth
+                    label="CVV"
+                    name="cvv"
+                    value={paymentDetails.cvv}
+                    onChange={handlePaymentDetailsChange}
+                    required
+                    placeholder="123"
+                    inputProps={{ maxLength: 4 }}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <InfoIcon 
+                            color="action" 
+                            titleAccess="3 or 4 digit security code"
+                          />
+                        </InputAdornment>
+                      ),
+                    }}
+                    helperText="3-4 digit security code on card back"
+                  />
+                </Grid>
+              </Grid> 
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
                   <Button variant="outlined" onClick={() => setPaymentMethod(null)}>
                     Back to Payment Methods

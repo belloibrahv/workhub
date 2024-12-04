@@ -31,8 +31,8 @@ const HubDetailPage: React.FC = () => {
                 hubDetails: {
                     id: hub.id,
                     name: hub.name,
-                    location: hub.location,
-                    price: hub.price,
+                    // location: hub.location,
+                    // price: hub.price,
                 },
                 isInFinalPage: false,
             };

@@ -2,14 +2,23 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useBookingStore } from '../store/booking';
 import {
-  Box, Button, TextField, Typography, Select, MenuItem, FormControl,
-  InputLabel, CircularProgress, Alert, Stack
+  Box,
+  Button,
+  TextField,
+  Typography,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  CircularProgress,
+  Alert,
+  Stack,
 } from '@mui/material';
 
 const CheckinPage: React.FC = () => {
   const { hubId } = useParams<{ hubId: string }>();
   const navigate = useNavigate();
-  const { currentBooking, updateCurrentBooking } = useBookingStore();
+  const { updateCurrentBooking } = useBookingStore();
 
   const [formData, setFormData] = useState({
     name: '',
@@ -30,9 +39,9 @@ const CheckinPage: React.FC = () => {
       return;
     }
 
-    // Initialize form with existing booking data or maintain hub details from previous page
+    // Retrieve or initialize booking data
     const existingBooking = window.currentBookingInfo || {};
-    const { userDetails = {}, bookingDetails = {} } = existingBooking;
+    const { userDetails = {}, bookingDetails = {}, hubDetails = {} } = existingBooking;
 
     setFormData({
       name: userDetails.name || '',
@@ -44,24 +53,20 @@ const CheckinPage: React.FC = () => {
       endHour: bookingDetails.bookEndTime || '',
     });
 
-    // Ensure global variable includes hub details
+    // Update session storage with hub details if not already present
     window.currentBookingInfo = {
       ...existingBooking,
-      hubDetails: existingBooking.hubDetails || {
-        id: hubId,
-        name: `Hub ${hubId}`,
-      },
+      hubDetails: hubDetails.id ? hubDetails : { id: hubId, name: `Hub ${hubId}` },
     };
   }, [hubId]);
 
   useEffect(() => {
-    // Update global booking info in real-time
+    const { visitDay, startHour, endHour, ...userDetails } = formData;
+
+    // Update global session variable with user details
     window.currentBookingInfo = {
       ...window.currentBookingInfo,
-      userDetails: {
-        ...window.currentBookingInfo?.userDetails,
-        ...formData,
-      },
+      userDetails: { ...userDetails },
       isInFinalPage: false,
     };
   }, [formData]);
@@ -98,11 +103,10 @@ const CheckinPage: React.FC = () => {
     setError(null);
     setLoading(true);
 
+    // Prepare and save updated booking information
     const updatedBooking = {
       ...window.currentBookingInfo,
-      userDetails: {
-        ...formData,
-      },
+      userDetails: { ...formData },
       bookingDetails: {
         bookDate: formData.visitDay,
         bookStartTime: formData.startHour,
@@ -122,9 +126,7 @@ const CheckinPage: React.FC = () => {
     return (
       <Box sx={{ padding: 4, textAlign: 'center' }}>
         <Alert severity="error">{error}</Alert>
-        <Button variant="contained" sx={{ marginTop: 2 }} onClick={() => navigate('/')}>
-          Back to Home
-        </Button>
+        <Button variant="contained" sx={{ marginTop: 2 }} onClick={() => navigate('/')}>Back to Home</Button>
       </Box>
     );
   }
