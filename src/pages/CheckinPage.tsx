@@ -66,7 +66,7 @@ const CheckinPage: React.FC = () => {
     // Update global session variable with user details
     window.currentBookingInfo = {
       ...window.currentBookingInfo,
-      userDetails: { ...userDetails },
+      userDetails: { ...formData },
       isInFinalPage: false,
     };
   }, [formData]);
