@@ -16,22 +16,22 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 
 const CONFIGURATIONS = {
   ram: [
-    { id: 'ram-4', value: '4', label: '4GB' },
-    { id: 'ram-8', value: '8', label: '8GB' },
-    { id: 'ram-16', value: '16', label: '16GB' },
-    { id: 'ram-32', value: '32', label: '32GB' },
-    { id: 'ram-64', value: '64', label: '64GB' },
+    { id: 'ram-4', value: '4GB', label: '4GB' },
+    { id: 'ram-8', value: '8GB', label: '8GB' },
+    { id: 'ram-16', value: '16GB', label: '16GB' },
+    { id: 'ram-32', value: '32GB', label: '32GB' },
+    { id: 'ram-64', value: '64GB', label: '64GB' },
   ],
   storage: [
-    { id: 'hdd-320', value: '320', label: '320GB' },
-    { id: 'hdd-500', value: '500', label: '500GB' },
-    { id: 'hdd-1000', value: '1', label: '1TB' },
-    { id: 'hdd-2000', value: '2', label: '2TB' },
+    { id: 'hdd-320', value: '320GB', label: '320GB' },
+    { id: 'hdd-500', value: '500GB', label: '500GB' },
+    { id: 'hdd-1000', value: '1TB', label: '1TB' },
+    { id: 'hdd-2000', value: '2TB', label: '2TB' },
   ],
   os: [
-    { id: 'os-windows', value: 'windows', label: 'Windows' },
-    { id: 'os-linux', value: 'linux', label: 'Linux' },
-    { id: 'os-macos', value: 'macos', label: 'MacOS' },
+    { id: 'os-windows', value: 'Windows', label: 'Windows' },
+    { id: 'os-linux', value: 'Linux', label: 'Linux' },
+    { id: 'os-macos', value: 'Macos', label: 'MacOS' },
   ],
 };
 
