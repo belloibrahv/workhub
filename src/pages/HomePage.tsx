@@ -14,6 +14,12 @@ const HomePage: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
+        window.currentBookingInfo = {
+            isInFinalPage: false,
+        };
+    },[])
+
+    useEffect(() => {
         // Mocking hub data. Replace with an API call if available.
         const fetchHubs = async () => {
             try {

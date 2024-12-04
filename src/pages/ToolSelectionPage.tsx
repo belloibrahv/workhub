@@ -70,6 +70,7 @@ const ToolSelectionPage: React.FC = () => {
     window.currentBookingInfo = {
       ...window.currentBookingInfo,
       configDetails: selectedConfig,
+      isInFinalPage: false,
     };
   }, [selectedConfig]);
 

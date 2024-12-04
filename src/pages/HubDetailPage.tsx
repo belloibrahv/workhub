@@ -34,6 +34,7 @@ const HubDetailPage: React.FC = () => {
                     location: hub.location,
                     price: hub.price,
                 },
+                isInFinalPage: false,
             };
     
             // Persist to sessionStorage instead of sessionStorage

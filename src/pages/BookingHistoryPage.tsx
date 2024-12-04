@@ -37,11 +37,11 @@ const BookingHistoryPage: React.FC = () => {
 
   // Reset window.currentBookingInfo when the page loads
   useEffect(() => {
-    window.currentBookingInfo = { isInFinalPage: false }; // Reset to desired state
+    window.currentBookingInfo = { isInFinalPage: false }; 
   }, []);
 
   const filteredBookings = useMemo(() => {
-    const seen = new Set(); // To keep track of unique bookings
+    const seen = new Set(); 
     
     return bookingHistory
       .filter((booking) => {

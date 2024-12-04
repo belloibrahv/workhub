@@ -62,6 +62,7 @@ const CheckinPage: React.FC = () => {
         ...window.currentBookingInfo?.userDetails,
         ...formData,
       },
+      isInFinalPage: false,
     };
   }, [formData]);
 

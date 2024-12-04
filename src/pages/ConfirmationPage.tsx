@@ -54,14 +54,34 @@ const ConfirmationPage: React.FC = () => {
       navigate('/');
       return;
     }
-
-    // Initialize global variables
-    window.currentBookingInfo = {
+  
+    // Remove redundant fields from userDetails
+    const sanitizedBookingInfo = {
       ...currentBooking,
+      userDetails: {
+        ...currentBooking.userDetails,
+      },
       isInFinalPage: true,
     };
-
-    window.bookingResults = JSON.parse(sessionStorage.getItem('bookingResults') || '[]');
+    delete sanitizedBookingInfo.userDetails.visitDay;
+    delete sanitizedBookingInfo.userDetails.startHour;
+    delete sanitizedBookingInfo.userDetails.endHour;
+    delete sanitizedBookingInfo.hubDetails?.location;
+    delete sanitizedBookingInfo.hubDetails?.price;
+  
+    // Initialize global variables
+    window.currentBookingInfo = sanitizedBookingInfo;
+  
+    const storedBookingResults = JSON.parse(sessionStorage.getItem('bookingResults') || '[]').map((result) => {
+      const sanitizedResult = { ...result };
+      delete sanitizedResult.userDetails?.visitDay;
+      delete sanitizedResult.userDetails?.startHour;
+      delete sanitizedResult.userDetails?.endHour;
+      delete sanitizedResult.hubDetails?.location;
+      delete sanitizedResult.hubDetails?.price;
+    });
+  
+    window.bookingResults = storedBookingResults;
   }, [currentBooking, navigate]);
 
   const handlePaymentMethodSelect = (method: 'now' | 'later') => {
@@ -125,12 +145,20 @@ const ConfirmationPage: React.FC = () => {
       ...window.currentBookingInfo,
       paymentDetails: window.currentBookingInfo.paymentDetails,
     };
-    delete bookingResult.isInFinalPage; // Remove isInFinalPage for storage
+    delete bookingResult.isInFinalPage; // Clean up transient fields
   
     try {
-      const existingResults: BookingResult[] = JSON.parse(sessionStorage.getItem('bookingResults') || '[]');
+      const existingResults: BookingResult[] = JSON.parse(sessionStorage.getItem('bookingResults') || '[]').map((result) => {
+        const sanitizedResult = { ...result };
+        delete sanitizedResult.userDetails?.visitDay;
+        delete sanitizedResult.userDetails?.startHour;
+        delete sanitizedResult.userDetails?.endHour;
+        delete sanitizedResult.hubDetails?.location;
+        delete sanitizedResult.hubDetails?.price;
+        return sanitizedResult;
+      });
   
-      // Check for duplicates and replace the old booking if necessary
+      // Filter out old bookings with the same details
       const updatedResults = existingResults.filter(
         (existingBooking) =>
           !(
@@ -140,20 +168,18 @@ const ConfirmationPage: React.FC = () => {
           )
       );
   
-      updatedResults.push(bookingResult); // Add the latest booking
+      updatedResults.push(bookingResult);
       sessionStorage.setItem('bookingResults', JSON.stringify(updatedResults));
       addBookingResult(bookingResult);
   
-      // Navigate to history after confirming successful storage
-      setLoading(false); // Explicitly stop loading before navigation
+      setLoading(false);
       navigate('/history', { replace: true });
     } catch (error) {
       console.error('Error finalizing booking:', error);
       setErrorMessage('Failed to save booking. Please try again.');
       setLoading(false);
     }
-  };
-  
+  };  
 
   const renderToolConfiguration = () => (
     <Grid container spacing={2}>
