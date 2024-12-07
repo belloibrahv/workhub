@@ -58,6 +58,9 @@ const CheckinPage: React.FC = () => {
       ...existingBooking,
       hubDetails: hubDetails.id ? hubDetails : { id: hubId, name: `Hub ${hubId}` },
     };
+
+    // Sync with sessionStorage
+    sessionStorage.setItem('currentBookingInfo', JSON.stringify(window.currentBookingInfo));
   }, [hubId]);
 
   useEffect(() => {
@@ -74,6 +77,9 @@ const CheckinPage: React.FC = () => {
       },
       isInFinalPage: false,
     };
+
+    // Sync with sessionStorage
+    sessionStorage.setItem('currentBookingInfo', JSON.stringify(window.currentBookingInfo));
   }, [formData]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -123,6 +129,9 @@ const CheckinPage: React.FC = () => {
     updateCurrentBooking(updatedBooking);
     window.currentBookingInfo = updatedBooking;
 
+    // Sync with sessionStorage
+    sessionStorage.setItem('currentBookingInfo', JSON.stringify(updatedBooking));
+
     setLoading(false);
     navigate(`/tools/${hubId}`);
   };
@@ -131,7 +140,9 @@ const CheckinPage: React.FC = () => {
     return (
       <Box sx={{ padding: 4, textAlign: 'center' }}>
         <Alert severity="error">{error}</Alert>
-        <Button variant="contained" sx={{ marginTop: 2 }} onClick={() => navigate('/')}>Back to Home</Button>
+        <Button variant="contained" sx={{ marginTop: 2 }} onClick={() => navigate('/')}>
+          Back to Home
+        </Button>
       </Box>
     );
   }

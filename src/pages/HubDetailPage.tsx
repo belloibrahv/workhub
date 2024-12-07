@@ -26,23 +26,24 @@ const HubDetailPage: React.FC = () => {
 
     useEffect(() => {
         if (hub) {
+            // Update global state with selected hub details
             window.currentBookingInfo = {
                 ...window.currentBookingInfo,
                 hubDetails: {
                     id: hub.id,
                     name: hub.name,
-                    // location: hub.location,
-                    // price: hub.price,
                 },
                 isInFinalPage: false,
             };
-    
-            // Persist to sessionStorage instead of sessionStorage
+
+            // Persist updated global state to sessionStorage
+            sessionStorage.setItem('currentBookingInfo', JSON.stringify(window.currentBookingInfo));
+
+            // Ensure booking results persist in sessionStorage
             const bookingResults = JSON.parse(sessionStorage.getItem('bookingResults') || '[]');
             sessionStorage.setItem('bookingResults', JSON.stringify(bookingResults));
         }
     }, [hub]);
-    
 
     if (!hub) {
         return (

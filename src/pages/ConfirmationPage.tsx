@@ -31,13 +31,17 @@ import { useBookingStore } from '../store/booking';
 import { BookingResult } from '@/types/booking';
 
 
-const validateCardNumber = (cardNumber: string): boolean => 
-  /^[0-9]{10,20}$/.test(cardNumber.replace(/\s|\-/g, ''));
+const validateCardNumber = (cardNumber: string): boolean =>
+  cardNumber.length >= 10 && cardNumber.length <= 20;
 
-const isValidExpiryDate = (expiryDate: string): boolean => true;
+const isValidExpiryDate = (expiryDate: string): boolean => {
+  const FROZEN_DATE = new Date('2024-01-01');
+  const [year, month] = expiryDate.split('-').map(Number);
+  const expiry = new Date(year, month - 1);
+  return expiry > FROZEN_DATE;
+};
 
-const isValidCVV = (cvv: string): boolean => 
-  /^[0-9]{3,4}$/.test(cvv);
+const isValidCVV = (cvv: string): boolean => cvv.length === 3 || cvv.length === 4;
 
 const ConfirmationPage: React.FC = () => {
   const navigate = useNavigate();
@@ -59,36 +63,20 @@ const ConfirmationPage: React.FC = () => {
       return;
     }
   
-    // Sanitize booking info for storage
+    // Sanitize booking info for storage, including hubDetails with the id
     const sanitizedBookingInfo = {
       ...currentBooking,
       userDetails: { ...currentBooking.userDetails },
       isInFinalPage: true,
     };
-    
-    // Remove unnecessary fields
-    delete sanitizedBookingInfo.userDetails.visitDay;
-    delete sanitizedBookingInfo.userDetails.startHour;
-    delete sanitizedBookingInfo.userDetails.endHour;
-    delete sanitizedBookingInfo.hubDetails?.location;
-    delete sanitizedBookingInfo.hubDetails?.price;
   
     // Initialize global variables
     window.currentBookingInfo = sanitizedBookingInfo;
   
-    // Safely parse and sanitize existing booking results
-    const storedBookingResults = JSON.parse(sessionStorage.getItem('bookingResults') || '[]').map((result) => {
-      const sanitizedResult = { ...result };
-      delete sanitizedResult.userDetails?.visitDay;
-      delete sanitizedResult.userDetails?.startHour;
-      delete sanitizedResult.userDetails?.endHour;
-      delete sanitizedResult.hubDetails?.location;
-      delete sanitizedResult.hubDetails?.price;
-      return sanitizedResult;
-    });
-  
+    // Populate window.bookingResults from sessionStorage (id will be excluded from bookingResults)
+    const storedBookingResults = JSON.parse(sessionStorage.getItem('bookingResults') || '[]');
     window.bookingResults = storedBookingResults;
-  }, [currentBooking, navigate]);
+  }, [currentBooking, navigate]);  
 
   const handlePaymentMethodSelect = (method: 'now' | 'later') => {
     setPaymentMethod(method);
@@ -151,8 +139,9 @@ const ConfirmationPage: React.FC = () => {
       ...window.currentBookingInfo,
       paymentDetails: window.currentBookingInfo.paymentDetails,
     };
-    delete bookingResult.isInFinalPage; // Clean up transient fields
-  
+    delete bookingResult.isInFinalPage;
+    delete bookingResult.hubDetails.id;
+    
     try {
       // Safely parse existing booking results
       const storedResults = sessionStorage.getItem('bookingResults');

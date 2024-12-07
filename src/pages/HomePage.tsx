@@ -13,11 +13,15 @@ const HomePage: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
+    // Initialize `window.currentBookingInfo` and synchronize with `sessionStorage`
     useEffect(() => {
-        window.currentBookingInfo = {
+        const initialBookingInfo = {
             isInFinalPage: false,
         };
-    },[])
+
+        window.currentBookingInfo = initialBookingInfo;
+        sessionStorage.setItem('currentBookingInfo', JSON.stringify(initialBookingInfo));
+    }, []);
 
     useEffect(() => {
         // Mocking hub data. Replace with an API call if available.
