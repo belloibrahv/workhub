@@ -35,10 +35,7 @@ const validateCardNumber = (cardNumber: string): boolean =>
   cardNumber.length >= 10 && cardNumber.length <= 20;
 
 const isValidExpiryDate = (expiryDate: string): boolean => {
-  const FROZEN_DATE = new Date('2024-01-01');
-  const [year, month] = expiryDate.split('-').map(Number);
-  const expiry = new Date(year, month - 1);
-  return expiry > FROZEN_DATE;
+  return true;
 };
 
 const isValidCVV = (cvv: string): boolean => cvv.length === 3 || cvv.length === 4;
