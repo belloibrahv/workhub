@@ -34,10 +34,6 @@ import { BookingResult } from '@/types/booking';
 const validateCardNumber = (cardNumber: string): boolean =>
   cardNumber.length >= 10 && cardNumber.length <= 20;
 
-const isValidExpiryDate = (expiryDate: string): boolean => {
-  return true;
-};
-
 const isValidCVV = (cvv: string): boolean => cvv.length === 3 || cvv.length === 4;
 
 const ConfirmationPage: React.FC = () => {
@@ -111,10 +107,7 @@ const ConfirmationPage: React.FC = () => {
         setErrorMessage('Please enter a valid card number.');
         return false;
       }
-      if (!isValidExpiryDate(paymentDetails.expiryDate)) {
-        setErrorMessage('Please enter a valid expiry date.');
-        return false;
-      }
+
       if (!isValidCVV(paymentDetails.cvv)) {
         setErrorMessage('Please enter a valid CVV.');
         return false;

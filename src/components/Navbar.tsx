@@ -17,8 +17,7 @@ const Navbar: React.FC = () => {
 
     const renderNavLinks = () =>
         navLinks.map(({ label, to }) => (
-            <ListItem
-                button
+            <ListItem 
                 key={label}
                 component={RouterLink}
                 to={to}
