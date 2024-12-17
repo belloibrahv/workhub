@@ -41,14 +41,8 @@ const BookingHistoryPage: React.FC = () => {
   }, []);
 
   const filteredBookings = useMemo(() => {
-    const seen = new Set(); 
-    
     return bookingHistory
       .filter((booking) => {
-        const bookingId = booking.id || `${booking.timestamp}-${booking.hubDetails?.id}`;
-        if (seen.has(bookingId)) return false; // Skip if already seen
-        seen.add(bookingId); // Mark this booking as seen
-        
         // Hub ID filter
         if (filter.hubId !== 'all' && booking.hubDetails?.id !== filter.hubId) return false;
         
@@ -73,7 +67,6 @@ const BookingHistoryPage: React.FC = () => {
         return dateB.getTime() - dateA.getTime();
       });
   }, [bookingHistory, filter]);
-  
 
   const handleFilterChange = (e: React.ChangeEvent<{ name?: string; value: unknown }>) => {
     const { name, value } = e.target;
@@ -171,7 +164,7 @@ const BookingHistoryPage: React.FC = () => {
           </Alert>
         ) : (
           filteredBookings.map((booking, index) => (
-            <Card key={index} sx={{ mb: 2 }}>
+            <Card key={`${index}-${booking.timestamp}`} sx={{ mb: 2 }}>
               <CardContent>
                 <Grid container spacing={2}>
                   {/* Hub Details */}
