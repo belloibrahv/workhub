@@ -41,6 +41,7 @@ const CheckinPage: React.FC = () => {
   }>({});
 
   const [loading, setLoading] = useState(false);
+  const [totalPrice, setTotalPrice] = useState<number>(0); // NEW: Total price state
 
   useEffect(() => {
     if (!hubId) {
@@ -75,21 +76,35 @@ const CheckinPage: React.FC = () => {
   useEffect(() => {
     const { visitDay, startHour, endHour, ...userDetails } = formData;
 
-    // Update global session variable with user details
-    window.currentBookingInfo = {
-      ...window.currentBookingInfo,
-      userDetails: { ...userDetails },
-      bookingDetails: {
-        bookDate: formData.visitDay,
-        bookStartTime: formData.startHour,
-        bookEndTime: formData.endHour,
-      },
-      isInFinalPage: false,
-    };
+    if (startHour && endHour) {
+      const start = parseInt(startHour.split(':')[0], 10);
+      const end = parseInt(endHour.split(':')[0], 10);
+      const pricePerHour = window.currentBookingInfo?.hubDetails?.price || 0;
 
-    // Sync with sessionStorage
-    sessionStorage.setItem('currentBookingInfo', JSON.stringify(window.currentBookingInfo));
-  }, [formData]);
+      if (start < end) {
+        const hours = end - start;
+        const total = hours * pricePerHour;
+        setTotalPrice(total);
+
+        // Update bookingDetails with total price
+        window.currentBookingInfo = {
+          ...window.currentBookingInfo,
+          userDetails: { ...userDetails },
+          bookingDetails: {
+            bookDate: formData.visitDay,
+            bookStartTime: formData.startHour,
+            bookEndTime: formData.endHour,
+            totalPrice: total,
+          },
+          isInFinalPage: false,
+        };
+        sessionStorage.setItem('currentBookingInfo', JSON.stringify(window.currentBookingInfo));
+      } else {
+        setTotalPrice(0);
+      }
+    }
+      sessionStorage.setItem('currentBookingInfo', JSON.stringify(window.currentBookingInfo));
+  }, [formData, formData.startHour, formData.endHour]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -168,10 +183,12 @@ const CheckinPage: React.FC = () => {
 
     setLoading(true);
 
+    const { visitDay, startHour, endHour, ...userDetails } = formData;
+
     // Prepare and save updated booking information
     const updatedBooking = {
       ...window.currentBookingInfo,
-      userDetails: { ...formData },
+      userDetails: { ...userDetails },
       bookingDetails: {
         bookDate: formData.visitDay,
         bookStartTime: formData.startHour,
