@@ -102,6 +102,11 @@ const CheckinPage: React.FC = () => {
     if (startHour >= endHour) return 'End Hour must be later than Start Hour.';
     return null;
   };
+  // Helper function to ensure input validation
+  const validateTime = (time: string) => {
+    const match = time.match(/^([0-2][0-9]):00$/);
+    return match ? match[0] : ""; // Return valid time or reset if invalid
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -200,34 +205,58 @@ const CheckinPage: React.FC = () => {
             label="Visit Day"
             name="visitDay"
             type="date"
-            value={formData.visitDay}
+            value={formData.visitDay || ''}
             onChange={handleInputChange}
             fullWidth
             required
             InputLabelProps={{ shrink: true }}
+            onFocus={(e) => {
+              if (!formData.visitDay) {
+                const frozenDate = '2024-01-01';
+                setFormData((prev) => ({ ...prev, visitDay: frozenDate }));
+                e.target.value = frozenDate; // Pre-fill the frozen date
+              }
+            }}
           />
+
           <TextField
             label="Start Hour"
             name="startHour"
             type="time"
             value={formData.startHour}
-            onChange={handleInputChange}
+            onChange={(e) => {
+              const validTime = validateTime(e.target.value);
+              setFormData((prev) => ({ ...prev, startHour: validTime }));
+            }}
             fullWidth
             required
             InputLabelProps={{ shrink: true }}
-            helperText="Enter your start time for the hub visit."
+            inputProps={{
+              step: 3600, // Ensures dropdown picker increments by an hour
+              pattern: "[0-2][0-9]:00", // Ensures manual input matches 24-hour format
+            }}
+            helperText="Select the start time (hourly increments only)."
           />
+
           <TextField
             label="End Hour"
             name="endHour"
             type="time"
             value={formData.endHour}
-            onChange={handleInputChange}
+            onChange={(e) => {
+              const validTime = validateTime(e.target.value);
+              setFormData((prev) => ({ ...prev, endHour: validTime }));
+            }}
             fullWidth
             required
             InputLabelProps={{ shrink: true }}
-            helperText="End time must be after the start time."
+            inputProps={{
+              step: 3600,
+              pattern: "[0-2][0-9]:00",
+            }}
+            helperText="Select the end time (hourly increments only)."
           />
+
           <Button
             type="submit"
             variant="contained"
