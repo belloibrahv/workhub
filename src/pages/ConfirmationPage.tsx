@@ -30,6 +30,16 @@ import { useNavigate } from 'react-router-dom';
 import { useBookingStore } from '../store/booking';
 import { BookingResult } from '@/types/booking';
 
+// Helper function to format expiry date to MM/YY
+const formatExpiryDate = (value: string) => {
+  if (value.length === 2 && value.indexOf('/') === -1) {
+    return value + '/'; // Add separator when user enters month
+  }
+  if (value.length > 5) {
+    return value.slice(0, 5); // Limit to 5 characters (MM/YY)
+  }
+  return value;
+};
 
 const validateCardNumber = (cardNumber: string): boolean =>
   cardNumber.length >= 10 && cardNumber.length <= 20;
@@ -311,26 +321,29 @@ const ConfirmationPage: React.FC = () => {
                   />
                 </Grid>
                 <Grid item xs={6}>
-                  <TextField
-                    fullWidth
-                    label="Expiry Date"
-                    name="expiryDate"
-                    type="month"
-                    value={paymentDetails.expiryDate}
-                    onChange={handlePaymentDetailsChange}
-                    required
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <InfoIcon 
-                            color="action" 
-                            titleAccess="Select a future expiry month and year"
-                          />
-                        </InputAdornment>
-                      ),
-                    }}
-                    helperText="Select expiry month and year"
-                  />
+                <TextField
+                  fullWidth
+                  label="Expiry Date"
+                  name="expiryDate"
+                  value={paymentDetails.expiryDate}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    // Format and validate the expiry date
+                    const formattedValue = formatExpiryDate(value);
+                    setPaymentDetails((prev) => ({
+                      ...prev,
+                      expiryDate: formattedValue,
+                    }));
+                    window.currentBookingInfo.paymentDetails.cardDetails.expiryDate = formattedValue;
+                  }}
+                  required
+                  placeholder="MM/YY"
+                  inputProps={{
+                    maxLength: 5,
+                    pattern: "(0[1-9]|1[0-2])/[0-9]{2}", // Enforces MM/YY format
+                  }}
+                  helperText="Enter expiry date in MM/YY format"
+                />
                 </Grid>
                 <Grid item xs={6}>
                   <TextField
