@@ -6,12 +6,7 @@ import {
   Button,
   TextField,
   Typography,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
   CircularProgress,
-  Alert,
   Stack,
 } from '@mui/material';
 
@@ -24,7 +19,6 @@ const CheckinPage: React.FC = () => {
     name: '',
     email: '',
     phone: '',
-    ageRange: '',
     visitDay: '',
     startHour: '',
     endHour: '',
@@ -34,14 +28,14 @@ const CheckinPage: React.FC = () => {
     name?: string;
     email?: string;
     phone?: string;
-    ageRange?: string;
     visitDay?: string;
     startHour?: string;
     endHour?: string;
   }>({});
 
   const [loading, setLoading] = useState(false);
-  const [totalPrice, setTotalPrice] = useState<number>(0); // NEW: Total price state
+  const [totalBookHours, setTotalBookHours] = useState(0);
+  const [totalBookPrice, setTotalBookPrice] = useState<number>(0);
 
   useEffect(() => {
     if (!hubId) {
@@ -53,20 +47,21 @@ const CheckinPage: React.FC = () => {
     const existingBooking = window.currentBookingInfo || {};
     const { userDetails = {}, bookingDetails = {}, hubDetails = {} } = existingBooking;
 
+    // Update form data from existing booking info
     setFormData({
       name: userDetails.name || '',
       email: userDetails.email || '',
       phone: userDetails.phone || '',
-      ageRange: userDetails.ageRange || '',
       visitDay: bookingDetails.bookDate || '',
       startHour: bookingDetails.bookStartTime || '',
       endHour: bookingDetails.bookEndTime || '',
     });
 
-    // Update session storage with hub details if not already present
+    // Update window.currentBookingInfo with hub details
     window.currentBookingInfo = {
       ...existingBooking,
-      hubDetails: hubDetails.id ? hubDetails : { id: hubId, name: `Hub ${hubId}` },
+      hubDetails: hubDetails.id ? hubDetails : { id: Number(hubId), name: `Hub ${hubId}` },
+      isInFinalPage: false,
     };
 
     // Sync with sessionStorage
@@ -79,14 +74,16 @@ const CheckinPage: React.FC = () => {
     if (startHour && endHour) {
       const start = parseInt(startHour.split(':')[0], 10);
       const end = parseInt(endHour.split(':')[0], 10);
-      const pricePerHour = window.currentBookingInfo?.hubDetails?.price || 0;
+      const pricePerHour = window.currentBookingInfo?.bookingDetails?.bookPrice || 0;
 
       if (start < end) {
         const hours = end - start;
         const total = hours * pricePerHour;
-        setTotalPrice(total);
+        
+        setTotalBookHours(hours);
+        setTotalBookPrice(total);
 
-        // Update bookingDetails with total price
+        // Update window.currentBookingInfo with real-time booking details
         window.currentBookingInfo = {
           ...window.currentBookingInfo,
           userDetails: { ...userDetails },
@@ -94,21 +91,37 @@ const CheckinPage: React.FC = () => {
             bookDate: formData.visitDay,
             bookStartTime: formData.startHour,
             bookEndTime: formData.endHour,
-            totalPrice: total,
+            bookPrice: pricePerHour,
+            totalBookHours: `${hours}-hours`,
+            totalBookPrice: total,
           },
           isInFinalPage: false,
         };
+
+        // Sync with sessionStorage
         sessionStorage.setItem('currentBookingInfo', JSON.stringify(window.currentBookingInfo));
       } else {
-        setTotalPrice(0);
+        setTotalBookHours(0);
+        setTotalBookPrice(0);
       }
     }
-      sessionStorage.setItem('currentBookingInfo', JSON.stringify(window.currentBookingInfo));
-  }, [formData, formData.startHour, formData.endHour]);
+  }, [formData.visitDay, formData.startHour, formData.endHour]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    
+    // Update window.currentBookingInfo in real-time for each field
+    if (name === 'name' || name === 'email' || name === 'phone') {
+      window.currentBookingInfo = {
+        ...window.currentBookingInfo,
+        userDetails: {
+          ...window.currentBookingInfo.userDetails,
+          [name]: value
+        }
+      };
+      sessionStorage.setItem('currentBookingInfo', JSON.stringify(window.currentBookingInfo));
+    }
     
     // Clear specific field error when user starts typing
     if (errors[name as keyof typeof errors]) {
@@ -118,7 +131,7 @@ const CheckinPage: React.FC = () => {
 
   const validateForm = () => {
     const newErrors: typeof errors = {};
-    const { name, email, phone, ageRange, visitDay, startHour, endHour } = formData;
+    const { name, email, phone, visitDay, startHour, endHour } = formData;
 
     // Name validation
     if (!name.trim()) {
@@ -143,11 +156,6 @@ const CheckinPage: React.FC = () => {
       newErrors.phone = 'Phone number must be between 10-15 digits.';
     }
 
-    // Age range validation
-    if (!ageRange) {
-      newErrors.ageRange = 'Please select an age range.';
-    }
-
     // Visit day validation
     if (!visitDay) {
       newErrors.visitDay = 'Visit Day is required.';
@@ -169,11 +177,6 @@ const CheckinPage: React.FC = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const validateTime = (time: string) => {
-    const match = time.match(/^([0-2][0-9]):00$/);
-    return match ? match[0] : ""; // Return valid time or reset if invalid
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -183,17 +186,9 @@ const CheckinPage: React.FC = () => {
 
     setLoading(true);
 
-    const { visitDay, startHour, endHour, ...userDetails } = formData;
-
     // Prepare and save updated booking information
     const updatedBooking = {
       ...window.currentBookingInfo,
-      userDetails: { ...userDetails },
-      bookingDetails: {
-        bookDate: formData.visitDay,
-        bookStartTime: formData.startHour,
-        bookEndTime: formData.endHour,
-      },
       isInFinalPage: false,
     };
 
@@ -246,30 +241,6 @@ const CheckinPage: React.FC = () => {
             error={!!errors.phone}
             helperText={errors.phone}
           />
-          <FormControl 
-            fullWidth 
-            required 
-            error={!!errors.ageRange}
-          >
-            <InputLabel>Age Range</InputLabel>
-            <Select
-              name="ageRange"
-              value={formData.ageRange}
-              onChange={handleInputChange}
-              label="Age Range"
-            >
-              <MenuItem value="">Select Age Range</MenuItem>
-              <MenuItem value="16-20">16-20</MenuItem>
-              <MenuItem value="21-25">21-25</MenuItem>
-              <MenuItem value="26-30">26-30</MenuItem>
-              <MenuItem value="31+">31 and above</MenuItem>
-            </Select>
-            {errors.ageRange && (
-              <Typography color="error" variant="caption" sx={{ ml: 2 }}>
-                {errors.ageRange}
-              </Typography>
-            )}
-          </FormControl>
           <TextField
             label="Visit Day"
             name="visitDay"
@@ -289,19 +260,12 @@ const CheckinPage: React.FC = () => {
               }
             }}
           />
-
           <TextField
             label="Start Hour"
             name="startHour"
             type="time"
             value={formData.startHour}
-            onChange={(e) => {
-              const validTime = validateTime(e.target.value);
-              setFormData((prev) => ({ ...prev, startHour: validTime }));
-              if (errors.startHour) {
-                setErrors((prev) => ({ ...prev, startHour: undefined }));
-              }
-            }}
+            onChange={handleInputChange}
             fullWidth
             required
             InputLabelProps={{ shrink: true }}
@@ -312,19 +276,12 @@ const CheckinPage: React.FC = () => {
             error={!!errors.startHour}
             helperText={errors.startHour || "Select the start time (hourly increments only)."}
           />
-
           <TextField
             label="End Hour"
             name="endHour"
             type="time"
             value={formData.endHour}
-            onChange={(e) => {
-              const validTime = validateTime(e.target.value);
-              setFormData((prev) => ({ ...prev, endHour: validTime }));
-              if (errors.endHour) {
-                setErrors((prev) => ({ ...prev, endHour: undefined }));
-              }
-            }}
+            onChange={handleInputChange}
             fullWidth
             required
             InputLabelProps={{ shrink: true }}
@@ -335,7 +292,8 @@ const CheckinPage: React.FC = () => {
             error={!!errors.endHour}
             helperText={errors.endHour || "Select the end time (hourly increments only)."}
           />
-
+          <Typography>Total Book Hours: {totalBookHours} Hours</Typography>
+          <Typography variant="h6">Total Book Price: ₦{totalBookPrice}</Typography>
           <Button
             type="submit"
             variant="contained"

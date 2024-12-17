@@ -38,7 +38,7 @@ const CONFIGURATIONS = {
 const ToolSelectionPage: React.FC = () => {
   const { hubId } = useParams<{ hubId: string }>();
   const navigate = useNavigate();
-  const { currentBooking, updateCurrentBooking } = useBookingStore();
+  const { updateCurrentBooking } = useBookingStore();
 
   const [selectedConfig, setSelectedConfig] = useState({
     ram: '',
@@ -47,10 +47,9 @@ const ToolSelectionPage: React.FC = () => {
   });
   const [loading, setLoading] = useState(false);
 
-  // Load existing configuration or initialize defaults
   useEffect(() => {
     const existingBooking = window.currentBookingInfo || {};
-    const { configDetails = {} } = existingBooking;
+    const { configDetails = {}, hubDetails = {} } = existingBooking;
 
     setSelectedConfig({
       ram: configDetails.ram || '',
@@ -58,85 +57,63 @@ const ToolSelectionPage: React.FC = () => {
       os: configDetails.os || '',
     });
 
-    // Ensure global variable includes hub and user details
+    // Ensure global state is initialized
     window.currentBookingInfo = {
       ...existingBooking,
-      hubDetails: existingBooking.hubDetails || { id: hubId, name: `Hub ${hubId}` },
+      hubDetails: hubDetails.id ? hubDetails : { id: hubId, name: `Hub ${hubId}` },
+      configDetails: configDetails || {},
+      isInFinalPage: false,
     };
 
     sessionStorage.setItem('currentBookingInfo', JSON.stringify(window.currentBookingInfo));
   }, [hubId]);
 
-  // Sync selected configuration to global variable in real-time
   useEffect(() => {
-    const { userDetails, ...restBookingInfo } = window.currentBookingInfo || {};
-    const { visitDay, startHour, endHour, ...filteredUserDetails } = userDetails || {};
-
+    // Real-time sync of selected config
     window.currentBookingInfo = {
-      ...restBookingInfo,
-      userDetails: filteredUserDetails, // Exclude specific fields
+      ...window.currentBookingInfo,
       configDetails: selectedConfig,
-      isInFinalPage: false,
     };
-
     sessionStorage.setItem('currentBookingInfo', JSON.stringify(window.currentBookingInfo));
   }, [selectedConfig]);
 
-  // Handle configuration selection
   const handleSelect = (category: 'ram' | 'storage' | 'os', value: string) => {
     setSelectedConfig((prev) => ({
       ...prev,
-      [category]: prev[category] === value ? '' : value,
+      [category]: prev[category] === value ? '' : value, // Toggle selection
     }));
   };
 
-  // Submit configuration and navigate to confirmation page
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (!selectedConfig.ram || !selectedConfig.storage || !selectedConfig.os) {
       alert('Please select RAM, Storage, and Operating System.');
       return;
     }
 
-    if (!hubId) {
-      alert('Invalid hub selection. Please start your booking again.');
-      navigate('/');
-      return;
-    }
-
     setLoading(true);
     try {
-      const { userDetails, ...restBookingInfo } = window.currentBookingInfo || {};
-      const { visitDay, startHour, endHour, ...filteredUserDetails } = userDetails || {};
-
-      const updatedBooking = {
-        ...restBookingInfo,
-        userDetails: filteredUserDetails,
+      // Finalize currentBooking state
+      window.currentBookingInfo = {
+        ...window.currentBookingInfo,
         configDetails: selectedConfig,
-        isInFinalPage: false,
       };
+      sessionStorage.setItem('currentBookingInfo', JSON.stringify(window.currentBookingInfo));
 
-      // Update store and global state
-      updateCurrentBooking(updatedBooking);
-      window.currentBookingInfo = updatedBooking;
-      sessionStorage.setItem('currentBookingInfo', JSON.stringify(updatedBooking));
-
+      updateCurrentBooking(window.currentBookingInfo);
       navigate('/confirmation');
     } catch (error) {
-      console.error('Error during submission:', error);
+      console.error('Error saving configuration:', error);
       alert('An error occurred. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  // Get the label of a selected configuration
   const getSelectedLabel = (category: 'ram' | 'storage' | 'os') => {
     const selectedValue = selectedConfig[category];
-    const option = CONFIGURATIONS[category].find((opt) => opt.value === selectedValue);
-    return option ? option.label : 'Not Selected';
+    return CONFIGURATIONS[category].find((opt) => opt.value === selectedValue)?.label || 'Not Selected';
   };
 
-  // Render configuration section
   const renderConfigSection = (
     title: string,
     options: typeof CONFIGURATIONS.ram,

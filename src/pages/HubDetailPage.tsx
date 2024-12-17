@@ -29,10 +29,13 @@ const HubDetailPage: React.FC = () => {
             // Update global state with selected hub details
             window.currentBookingInfo = {
                 ...window.currentBookingInfo,
+                bookingDetails: {
+                    bookPrice: hub.price
+                },
                 hubDetails: {
                     id: hub.id,
                     name: hub.name,
-                    price: hub.price,
+                    // price: hub.price,
                 },
                 isInFinalPage: false,
             };

@@ -211,6 +211,12 @@ const BookingHistoryPage: React.FC = () => {
                     <Typography variant="body2">
                       End Time: {booking.bookingDetails?.bookEndTime || 'N/A'}
                     </Typography>
+                    <Typography variant="body2">
+                      Book Hour: {booking.bookingDetails?.totalBookHours || 'N/A'}
+                    </Typography>
+                    <Typography variant="body2">
+                      Book Total Price: ₦{booking.bookingDetails?.totalBookPrice || 'N/A'}
+                    </Typography>
                   </Grid>
 
                   {/* Payment Details */}

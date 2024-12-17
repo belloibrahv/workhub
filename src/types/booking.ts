@@ -7,12 +7,15 @@ export interface BookingResult {
     name: string;
     email: string;
     phone: string;
-    ageRange: string;
+    // ageRange: string;
   };
   bookingDetails: {
     bookDate: string;
     bookStartTime: string;
     bookEndTime: string;
+    totalBookPrice: string;
+    totalBookHours: string;
+    bookPrice: string;
   };
   configDetails: {
     ram: string;
@@ -41,12 +44,14 @@ export interface CurrentBookingInfo {
     name: string;
     email: string;
     phone: string;
-    ageRange: string;
   };
   bookingDetails: {
     bookDate: string;
     bookStartTime: string;
     bookEndTime: string;
+    totalBookPrice: string;
+    totalBookHours: string;
+    bookPrice: string;
   };
   configDetails: {
     ram: string;

@@ -57,137 +57,92 @@ const ConfirmationPage: React.FC = () => {
 
   const [activeStep, setActiveStep] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState<'now' | 'later' | null>(null);
-  const [paymentDetails, setPaymentDetails] = useState({
-    cardNumber: '',
-    expiryDate: '',
-    cvv: '',
-  });
+  const [paymentDetails, setPaymentDetails] = useState({ cardNumber: '', expiryDate: '', cvv: '' });
   const [errorMessage, setErrorMessage] = useState('');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    // Ensure valid booking information
     if (!currentBooking.hubDetails?.id) {
       navigate('/');
       return;
     }
-  
-    // Sanitize booking info for storage, including hubDetails with the id
-    const sanitizedBookingInfo = {
-      ...currentBooking,
-      userDetails: { ...currentBooking.userDetails },
-      isInFinalPage: true,
-    };
-  
-    // Initialize global variables
-    window.currentBookingInfo = sanitizedBookingInfo;
-  
-    // Populate window.bookingResults from sessionStorage (id will be excluded from bookingResults)
-    const storedBookingResults = JSON.parse(sessionStorage.getItem('bookingResults') || '[]');
-    window.bookingResults = storedBookingResults;
-  }, [currentBooking, navigate]);  
+
+    // Initialize global booking info
+    window.currentBookingInfo = { ...currentBooking, isInFinalPage: true };
+    const storedResults = JSON.parse(sessionStorage.getItem('bookingResults') || '[]');
+    window.bookingResults = storedResults;
+  }, [currentBooking, navigate]);
 
   const handlePaymentMethodSelect = (method: 'now' | 'later') => {
     setPaymentMethod(method);
-    window.currentBookingInfo = {
-      ...window.currentBookingInfo,
-      paymentDetails: {
-        paymentMode: { payNow: method === 'now', payLater: method === 'later' },
-        ...(method === 'now' && { cardDetails: {} }),
-      },
+    window.currentBookingInfo.paymentDetails = {
+      paymentMode: { payNow: method === 'now', payLater: method === 'later' },
+      cardDetails: method === 'now' ? {} : undefined,
     };
     setActiveStep(1);
   };
 
   const handlePaymentDetailsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setPaymentDetails((prev) => ({ ...prev, [name]: value }));
+    const updatedValue = name === 'expiryDate' ? formatExpiryDate(value) : value;
+
+    setPaymentDetails((prev) => ({ ...prev, [name]: updatedValue }));
 
     if (paymentMethod === 'now') {
-      window.currentBookingInfo = {
-        ...window.currentBookingInfo,
-        paymentDetails: {
-          ...window.currentBookingInfo.paymentDetails,
-          cardDetails: {
-            ...window.currentBookingInfo.paymentDetails?.cardDetails,
-            [name]: value,
-          },
-        },
+      window.currentBookingInfo.paymentDetails.cardDetails = {
+        ...window.currentBookingInfo.paymentDetails.cardDetails,
+        [name]: updatedValue,
       };
     }
   };
 
-  const validatePaymentDetails = (): boolean => {
+  const validatePaymentDetails = () => {
     if (paymentMethod === 'now') {
-      if (!validateCardNumber(paymentDetails.cardNumber)) {
-        setErrorMessage('Please enter a valid card number.');
-        return false;
-      }
-      if (!isValidExpiryDate(paymentDetails.expiryDate)) {
-        setErrorMessage('Please enter a valid expiry date.');
-        return false;
-      }
-      if (!isValidCVV(paymentDetails.cvv)) {
-        setErrorMessage('Please enter a valid CVV.');
-        return false;
-      }
+      if (!validateCardNumber(paymentDetails.cardNumber)) return 'Invalid card number.';
+      if (!isValidExpiryDate(paymentDetails.expiryDate)) return 'Invalid expiry date.';
+      if (!isValidCVV(paymentDetails.cvv)) return 'Invalid CVV.';
     }
-    return true;
+    return '';
   };
 
-  const handlePaymentSubmit = async () => {
-    setErrorMessage('');
-    setLoading(true);
-  
-    if (!validatePaymentDetails()) {
-      setLoading(false);
+  const handlePaymentSubmit = () => {
+    const validationError = validatePaymentDetails();
+    if (validationError) {
+      setErrorMessage(validationError);
       return;
     }
-  
+
+    setErrorMessage('');
+    setLoading(true);
+
     const bookingResult: BookingResult = {
       ...window.currentBookingInfo,
       paymentDetails: window.currentBookingInfo.paymentDetails,
     };
+
+    // Remove unneeded fields
     delete bookingResult.isInFinalPage;
     delete bookingResult.hubDetails.id;
-    
-    try {
-      // Safely parse existing booking results
-      const storedResults = sessionStorage.getItem('bookingResults');
-      const existingResults: BookingResult[] = storedResults 
-        ? JSON.parse(storedResults).map((result: any) => {
-            const sanitizedResult = { ...result };
-            delete sanitizedResult.userDetails?.visitDay;
-            delete sanitizedResult.userDetails?.startHour;
-            delete sanitizedResult.userDetails?.endHour;
-            delete sanitizedResult.hubDetails?.location;
-            delete sanitizedResult.hubDetails?.price;
-            return sanitizedResult;
-          })
-        : [];
-  
-      // Filter out duplicate bookings
-      const isDuplicateBooking = existingResults.some(
-        (existingBooking) =>
-          existingBooking &&
-          existingBooking.hubDetails?.id === bookingResult.hubDetails.id &&
-          existingBooking.bookingDetails.bookDate === bookingResult.bookingDetails.bookDate &&
-          existingBooking.bookingDetails.bookStartTime === bookingResult.bookingDetails.bookStartTime
-      );
-  
-      if (!isDuplicateBooking) {
-        const updatedResults = [...existingResults, bookingResult];
-        sessionStorage.setItem('bookingResults', JSON.stringify(updatedResults));
-        addBookingResult(bookingResult);
-      }
-  
-      setLoading(false);
-      navigate('/history', { replace: true });
-    } catch (error) {
-      console.error('Error finalizing booking:', error);
-      setErrorMessage('Failed to save booking. Please try again.');
-      setLoading(false);
+
+    const existingResults = window.bookingResults || [];
+    const isDuplicate = existingResults.some(
+      (result: BookingResult) =>
+        result.hubDetails?.name === bookingResult.hubDetails.name &&
+        result.bookingDetails.bookDate === bookingResult.bookingDetails.bookDate &&
+        result.bookingDetails.bookStartTime === bookingResult.bookingDetails.bookStartTime
+    );
+
+    if (!isDuplicate) {
+      const updatedResults = [...existingResults, bookingResult];
+      window.bookingResults = updatedResults;
+      sessionStorage.setItem('bookingResults', JSON.stringify(updatedResults));
+      addBookingResult(bookingResult);
     }
-  };  
+
+    setLoading(false);
+    navigate('/history', { replace: true });
+  };
 
   const renderToolConfiguration = () => (
     <Grid container spacing={2}>
@@ -247,7 +202,7 @@ const ConfirmationPage: React.FC = () => {
               <Typography>Name: {currentBooking.userDetails.name}</Typography>
               <Typography>Email: {currentBooking.userDetails.email}</Typography>
               <Typography>Phone: {currentBooking.userDetails.phone}</Typography>
-              <Typography>Age Range: {currentBooking.userDetails.ageRange}</Typography>
+              {/* <Typography>Age Range: {currentBooking.userDetails.ageRange}</Typography> */}
             </Box>
 
             {/* Booking Details */}

@@ -19,7 +19,7 @@ interface BookingStore {
 export const useBookingStore = create<BookingStore>((set) => ({
   currentBooking: {
     hubDetails: { id: 0, name: '' },
-    userDetails: { name: '', email: '', phone: '', ageRange: '' },
+    userDetails: { name: '', email: '', phone: '' },
     bookingDetails: { bookDate: '', bookStartTime: '', bookEndTime: '' },
     configDetails: { ram: '', storage: '', os: '' },
     paymentDetails: {
