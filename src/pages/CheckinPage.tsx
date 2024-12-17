@@ -30,12 +30,21 @@ const CheckinPage: React.FC = () => {
     endHour: '',
   });
 
-  const [error, setError] = useState<string | null>(null);
+  const [errors, setErrors] = useState<{
+    name?: string;
+    email?: string;
+    phone?: string;
+    ageRange?: string;
+    visitDay?: string;
+    startHour?: string;
+    endHour?: string;
+  }>({});
+
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!hubId) {
-      setError('Invalid hub selection. Please go back and select a hub.');
+      navigate('/');
       return;
     }
 
@@ -61,7 +70,7 @@ const CheckinPage: React.FC = () => {
 
     // Sync with sessionStorage
     sessionStorage.setItem('currentBookingInfo', JSON.stringify(window.currentBookingInfo));
-  }, [hubId]);
+  }, [hubId, navigate]);
 
   useEffect(() => {
     const { visitDay, startHour, endHour, ...userDetails } = formData;
@@ -85,24 +94,66 @@ const CheckinPage: React.FC = () => {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    
+    // Clear specific field error when user starts typing
+    if (errors[name as keyof typeof errors]) {
+      setErrors((prev) => ({ ...prev, [name]: undefined }));
+    }
   };
 
   const validateForm = () => {
+    const newErrors: typeof errors = {};
     const { name, email, phone, ageRange, visitDay, startHour, endHour } = formData;
-    if (!name.trim()) return 'Full Name is required.';
-    if (name.length < 3) return 'Full Name must be at least 3 characters.';
+
+    // Name validation
+    if (!name.trim()) {
+      newErrors.name = 'Full Name is required.';
+    } else if (name.length < 3) {
+      newErrors.name = 'Full Name must be at least 3 characters.';
+    }
+
+    // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!email || !emailRegex.test(email)) return 'Enter a valid email address.';
-    const phoneRegex = /^[0-9]{10,15}$/;
-    if (!phone || !phoneRegex.test(phone)) return 'Phone must be 10-15 digits.';
-    if (!ageRange) return 'Please select an age range.';
-    if (!visitDay) return 'Visit Day is required.';
-    if (!startHour) return 'Start Hour is required.';
-    if (!endHour) return 'End Hour is required.';
-    if (startHour >= endHour) return 'End Hour must be later than Start Hour.';
-    return null;
+    if (!email) {
+      newErrors.email = 'Email is required.';
+    } else if (!emailRegex.test(email)) {
+      newErrors.email = 'Enter a valid email address.';
+    }
+
+    // Phone validation (more flexible)
+    const sanitizedPhone = phone.replace(/[^\d]/g, '');
+    if (!phone) {
+      newErrors.phone = 'Phone number is required.';
+    } else if (sanitizedPhone.length < 10 || sanitizedPhone.length > 15) {
+      newErrors.phone = 'Phone number must be between 10-15 digits.';
+    }
+
+    // Age range validation
+    if (!ageRange) {
+      newErrors.ageRange = 'Please select an age range.';
+    }
+
+    // Visit day validation
+    if (!visitDay) {
+      newErrors.visitDay = 'Visit Day is required.';
+    }
+
+    // Start hour validation
+    if (!startHour) {
+      newErrors.startHour = 'Start Hour is required.';
+    }
+
+    // End hour validation
+    if (!endHour) {
+      newErrors.endHour = 'End Hour is required.';
+    } else if (startHour && endHour && startHour >= endHour) {
+      newErrors.endHour = 'End Hour must be later than Start Hour.';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
-  // Helper function to ensure input validation
+
   const validateTime = (time: string) => {
     const match = time.match(/^([0-2][0-9]):00$/);
     return match ? match[0] : ""; // Return valid time or reset if invalid
@@ -110,13 +161,11 @@ const CheckinPage: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const validationError = validateForm();
-    if (validationError) {
-      setError(validationError);
+    
+    if (!validateForm()) {
       return;
     }
 
-    setError(null);
     setLoading(true);
 
     // Prepare and save updated booking information
@@ -141,23 +190,11 @@ const CheckinPage: React.FC = () => {
     navigate(`/tools/${hubId}`);
   };
 
-  if (error) {
-    return (
-      <Box sx={{ padding: 4, textAlign: 'center' }}>
-        <Alert severity="error">{error}</Alert>
-        <Button variant="contained" sx={{ marginTop: 2 }} onClick={() => navigate('/')}>
-          Back to Home
-        </Button>
-      </Box>
-    );
-  }
-
   return (
     <Box sx={{ padding: 4, maxWidth: 600, margin: 'auto' }}>
       <Typography variant="h4" align="center" gutterBottom>
         Check In to Your Hub
       </Typography>
-      {error && <Alert severity="error">{error}</Alert>}
       <form onSubmit={handleSubmit}>
         <Stack spacing={3}>
           <TextField
@@ -167,6 +204,8 @@ const CheckinPage: React.FC = () => {
             onChange={handleInputChange}
             fullWidth
             required
+            error={!!errors.name}
+            helperText={errors.name}
           />
           <TextField
             label="Email"
@@ -176,6 +215,8 @@ const CheckinPage: React.FC = () => {
             onChange={handleInputChange}
             fullWidth
             required
+            error={!!errors.email}
+            helperText={errors.email}
           />
           <TextField
             label="Phone Number"
@@ -185,8 +226,14 @@ const CheckinPage: React.FC = () => {
             onChange={handleInputChange}
             fullWidth
             required
+            error={!!errors.phone}
+            helperText={errors.phone}
           />
-          <FormControl fullWidth required>
+          <FormControl 
+            fullWidth 
+            required 
+            error={!!errors.ageRange}
+          >
             <InputLabel>Age Range</InputLabel>
             <Select
               name="ageRange"
@@ -200,6 +247,11 @@ const CheckinPage: React.FC = () => {
               <MenuItem value="26-30">26-30</MenuItem>
               <MenuItem value="31+">31 and above</MenuItem>
             </Select>
+            {errors.ageRange && (
+              <Typography color="error" variant="caption" sx={{ ml: 2 }}>
+                {errors.ageRange}
+              </Typography>
+            )}
           </FormControl>
           <TextField
             label="Visit Day"
@@ -210,6 +262,8 @@ const CheckinPage: React.FC = () => {
             fullWidth
             required
             InputLabelProps={{ shrink: true }}
+            error={!!errors.visitDay}
+            helperText={errors.visitDay}
             onFocus={(e) => {
               if (!formData.visitDay) {
                 const frozenDate = '2024-01-01';
@@ -227,6 +281,9 @@ const CheckinPage: React.FC = () => {
             onChange={(e) => {
               const validTime = validateTime(e.target.value);
               setFormData((prev) => ({ ...prev, startHour: validTime }));
+              if (errors.startHour) {
+                setErrors((prev) => ({ ...prev, startHour: undefined }));
+              }
             }}
             fullWidth
             required
@@ -235,7 +292,8 @@ const CheckinPage: React.FC = () => {
               step: 3600, // Ensures dropdown picker increments by an hour
               pattern: "[0-2][0-9]:00", // Ensures manual input matches 24-hour format
             }}
-            helperText="Select the start time (hourly increments only)."
+            error={!!errors.startHour}
+            helperText={errors.startHour || "Select the start time (hourly increments only)."}
           />
 
           <TextField
@@ -246,6 +304,9 @@ const CheckinPage: React.FC = () => {
             onChange={(e) => {
               const validTime = validateTime(e.target.value);
               setFormData((prev) => ({ ...prev, endHour: validTime }));
+              if (errors.endHour) {
+                setErrors((prev) => ({ ...prev, endHour: undefined }));
+              }
             }}
             fullWidth
             required
@@ -254,7 +315,8 @@ const CheckinPage: React.FC = () => {
               step: 3600,
               pattern: "[0-2][0-9]:00",
             }}
-            helperText="Select the end time (hourly increments only)."
+            error={!!errors.endHour}
+            helperText={errors.endHour || "Select the end time (hourly increments only)."}
           />
 
           <Button

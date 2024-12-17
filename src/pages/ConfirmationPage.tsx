@@ -30,13 +30,14 @@ import { useNavigate } from 'react-router-dom';
 import { useBookingStore } from '../store/booking';
 import { BookingResult } from '@/types/booking';
 
+
 // Helper function to format expiry date to MM/YY
 const formatExpiryDate = (value: string) => {
   if (value.length === 2 && value.indexOf('/') === -1) {
-    return value + '/'; // Add separator when user enters month
+    return value + '/';
   }
   if (value.length > 5) {
-    return value.slice(0, 5); // Limit to 5 characters (MM/YY)
+    return value.slice(0, 5);
   }
   return value;
 };
