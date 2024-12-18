@@ -69,8 +69,34 @@ const CheckinPage: React.FC = () => {
   }, [hubId, navigate]);
 
   useEffect(() => {
-    const { visitDay, startHour, endHour, ...userDetails } = formData;
+    const { visitDay, startHour, endHour } = formData;
 
+    // Update window.currentBookingInfo for start and end hours independently
+    if (startHour) {
+      window.currentBookingInfo = {
+        ...window.currentBookingInfo,
+        bookingDetails: {
+          ...window.currentBookingInfo.bookingDetails,
+          bookStartTime: startHour,
+        },
+        isInFinalPage: false,
+      };
+      sessionStorage.setItem('currentBookingInfo', JSON.stringify(window.currentBookingInfo));
+    }
+
+    if (endHour) {
+      window.currentBookingInfo = {
+        ...window.currentBookingInfo,
+        bookingDetails: {
+          ...window.currentBookingInfo.bookingDetails,
+          bookEndTime: endHour,
+        },
+        isInFinalPage: false,
+      };
+      sessionStorage.setItem('currentBookingInfo', JSON.stringify(window.currentBookingInfo));
+    }
+
+    // Calculate total book hours and price
     if (startHour && endHour) {
       const start = parseInt(startHour.split(':')[0], 10);
       const end = parseInt(endHour.split(':')[0], 10);
@@ -83,15 +109,12 @@ const CheckinPage: React.FC = () => {
         setTotalBookHours(hours);
         setTotalBookPrice(total);
 
-        // Update window.currentBookingInfo with real-time booking details
+        // Update window.currentBookingInfo with booking details
         window.currentBookingInfo = {
           ...window.currentBookingInfo,
-          userDetails: { ...userDetails },
           bookingDetails: {
-            bookDate: formData.visitDay,
-            bookStartTime: formData.startHour,
-            bookEndTime: formData.endHour,
-            bookPrice: pricePerHour,
+            ...window.currentBookingInfo.bookingDetails,
+            bookDate: visitDay,
             totalBookHours: `${hours}-hours`,
             totalBookPrice: total,
           },
@@ -105,7 +128,7 @@ const CheckinPage: React.FC = () => {
         setTotalBookPrice(0);
       }
     }
-  }, [formData.visitDay, formData.startHour, formData.endHour]);
+  }, [formData.startHour, formData.endHour, formData.visitDay]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;

@@ -12,7 +12,6 @@ import {
   InputLabel,
   TextField,
   Chip,
-  Divider,
   Paper,
   Alert,
 } from '@mui/material';
@@ -43,8 +42,25 @@ const BookingHistoryPage: React.FC = () => {
   const filteredBookings = useMemo(() => {
     return bookingHistory
       .filter((booking) => {
-        // Hub ID filter
-        if (filter.hubId !== 'all' && booking.hubDetails?.id !== filter.hubId) return false;
+        // Hub ID filter with improved hub name comparison
+        if (filter.hubId !== 'all') {
+          const hubIdMap = {
+            '1': ['Lekki Hub', 1],
+            '2': ['Yaba Hub', 2],
+            '3': ['Sango Hub', 3]
+          };
+
+          const selectedHub = hubIdMap[filter.hubId];
+          const matchingHubName = booking.hubDetails?.name;
+          const matchingHubId = booking.hubDetails?.id;
+
+          if (
+            !selectedHub || 
+            (selectedHub[0] !== matchingHubName && selectedHub[1] !== matchingHubId)
+          ) {
+            return false;
+          }
+        }
         
         // Payment status filter
         const isPaid = booking.paymentDetails?.paymentMode?.payNow;
