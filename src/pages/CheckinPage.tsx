@@ -146,12 +146,25 @@ const CheckinPage: React.FC = () => {
       sessionStorage.setItem('currentBookingInfo', JSON.stringify(window.currentBookingInfo));
     }
     
+    // Update bookDate (visitDay) in real-time
+    if (name === 'visitDay') {
+      window.currentBookingInfo = {
+        ...window.currentBookingInfo,
+        bookingDetails: {
+          ...window.currentBookingInfo.bookingDetails,
+          bookDate: value
+        },
+        isInFinalPage: false
+      };
+      sessionStorage.setItem('currentBookingInfo', JSON.stringify(window.currentBookingInfo));
+    }
+    
     // Clear specific field error when user starts typing
     if (errors[name as keyof typeof errors]) {
       setErrors((prev) => ({ ...prev, [name]: undefined }));
     }
   };
-
+  
   const validateForm = () => {
     const newErrors: typeof errors = {};
     const { name, email, phone, visitDay, startHour, endHour } = formData;
