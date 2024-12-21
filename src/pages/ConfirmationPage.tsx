@@ -78,7 +78,7 @@ const ConfirmationPage: React.FC = () => {
     setPaymentMethod(method);
     window.currentBookingInfo.paymentDetails = {
       paymentMode: { payNow: method === 'now', payLater: method === 'later' },
-      cardDetails: method === 'now' ? {} : undefined,
+      cardDetails: method === 'now' ? {cardNumber: '', expiryDate: '', cvv: ''} : {cardNumber: '', expiryDate: '', cvv: ''},
     };
     setActiveStep(1);
   };
