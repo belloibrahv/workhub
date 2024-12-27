@@ -68,8 +68,8 @@ const ConfirmationPage: React.FC = () => {
       return;
     }
 
-    // Initialize global booking info
-    window.currentBookingInfo = { ...currentBooking, isInFinalPage: true };
+    // Initialize global booking info with isInFinalPage set to false when landing
+    window.currentBookingInfo = { ...currentBooking, isInFinalPage: false };
     const storedResults = JSON.parse(sessionStorage.getItem('bookingResults') || '[]');
     window.bookingResults = storedResults;
   }, [currentBooking, navigate]);
@@ -80,9 +80,19 @@ const ConfirmationPage: React.FC = () => {
       paymentMode: { payNow: method === 'now', payLater: method === 'later' },
       cardDetails: method === 'now' ? {cardNumber: '', expiryDate: '', cvv: ''} : {cardNumber: '', expiryDate: '', cvv: ''},
     };
+    // Set isInFinalPage to true when payment method is selected
+    window.currentBookingInfo.isInFinalPage = true;
     setActiveStep(1);
   };
 
+  const resetPaymentSelection = () => {
+    setPaymentMethod(null);
+    setActiveStep(0);
+    // Reset isInFinalPage to false when going back to payment selection
+    window.currentBookingInfo.isInFinalPage = false;
+  };
+
+  // Update the existing payment details change handler
   const handlePaymentDetailsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     const updatedValue = name === 'expiryDate' ? formatExpiryDate(value) : value;
@@ -95,6 +105,13 @@ const ConfirmationPage: React.FC = () => {
         [name]: updatedValue,
       };
     }
+  };
+
+  // Modify the back to payment methods button handler
+  const handleBackToPaymentMethods = () => {
+    resetPaymentSelection();
+    // Additional cleanup if needed
+    setPaymentDetails({ cardNumber: '', expiryDate: '', cvv: '' });
   };
 
   const validatePaymentDetails = () => {
@@ -326,9 +343,9 @@ const ConfirmationPage: React.FC = () => {
                 </Grid>
               </Grid> 
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
-                  <Button variant="outlined" onClick={() => setPaymentMethod(null)}>
-                    Back to Payment Methods
-                  </Button>
+                <Button variant="outlined" onClick={handleBackToPaymentMethods}>
+                  Back to Payment Methods
+                </Button>
                   <Button
                     variant="contained"
                     color="success"
@@ -347,7 +364,7 @@ const ConfirmationPage: React.FC = () => {
                 <Typography variant="body1" sx={{ mb: 2 }}>
                   You've chosen to pay later. Your booking is pending.
                 </Typography>
-                <Button variant="outlined" onClick={() => setPaymentMethod(null)}>
+                <Button variant="outlined" onClick={handleBackToPaymentMethods}>
                   Back to Payment Methods
                 </Button>
                 <Button
