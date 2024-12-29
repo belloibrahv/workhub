@@ -31,7 +31,7 @@ const CONFIGURATIONS = {
   os: [
     { id: 'os-windows', value: 'Windows', label: 'Windows' },
     { id: 'os-linux', value: 'Linux', label: 'Linux' },
-    { id: 'os-macos', value: 'Macos', label: 'MacOS' },
+    { id: 'os-macos', value: 'MacOs', label: 'MacOS' },
   ],
 };
 
