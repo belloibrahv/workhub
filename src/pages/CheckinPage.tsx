@@ -297,37 +297,38 @@ const CheckinPage: React.FC = () => {
             }}
           />
           <TextField
-            label="Start Hour"
-            name="startHour"
-            type="time"
-            value={formData.startHour}
-            onChange={handleInputChange}
-            fullWidth
-            required
-            InputLabelProps={{ shrink: true }}
-            inputProps={{
-              step: 3600, // Ensures dropdown picker increments by an hour
-              pattern: "[0-2][0-9]:00", // Ensures manual input matches 24-hour format
-            }}
-            error={!!errors.startHour}
-            helperText={errors.startHour || "Select the start time (hourly increments only)."}
-          />
-          <TextField
-            label="End Hour"
-            name="endHour"
-            type="time"
-            value={formData.endHour}
-            onChange={handleInputChange}
-            fullWidth
-            required
-            InputLabelProps={{ shrink: true }}
-            inputProps={{
-              step: 3600,
-              pattern: "[0-2][0-9]:00",
-            }}
-            error={!!errors.endHour}
-            helperText={errors.endHour || "Select the end time (hourly increments only)."}
-          />
+              label="Start Hour"
+              name="startHour"
+              type="time"
+              value={formData.startHour}
+              onChange={handleInputChange}
+              fullWidth
+              required
+              InputLabelProps={{ shrink: true }}
+              inputProps={{
+                step: 3600, // Disable minute selection
+                pattern: "[0-2][0-9]:00", // Ensure 24-hour format (HH:00)
+              }}
+              error={!!errors.startHour}
+              helperText={errors.startHour || "Select the start time (hourly increments only)."}
+            />
+            <TextField
+              label="End Hour"
+              name="endHour"
+              type="time"
+              value={formData.endHour}
+              onChange={handleInputChange}
+              fullWidth
+              required
+              InputLabelProps={{ shrink: true }}
+              inputProps={{
+                step: 3600, // Disable minute selection
+                pattern: "[0-2][0-9]:00", // Ensure 24-hour format (HH:00)
+              }}
+              error={!!errors.endHour}
+              helperText={errors.endHour || "Select the end time (hourly increments only)."}
+            />
+
           <Typography>Total Book Hours: {totalBookHours} Hours</Typography>
           <Typography variant="h6">Total Book Price: ₦{totalBookPrice}</Typography>
           <Button
