@@ -1,4 +1,5 @@
 export interface BookingResult {
+  timestamp?: string;
   hubDetails: {
     id: number;
     name: string;
@@ -49,9 +50,9 @@ export interface CurrentBookingInfo {
     bookDate: string;
     bookStartTime: string;
     bookEndTime: string;
-    totalBookPrice: string;
-    totalBookHours: string;
-    bookPrice: string;
+    totalBookPrice?: string;
+    totalBookHours?: string;
+    bookPrice?: string;
   };
   configDetails: {
     ram: string;

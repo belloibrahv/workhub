@@ -21,7 +21,15 @@ import {
   LocationOn as LocationIcon,
   DevicesOther as DevicesIcon,
 } from '@mui/icons-material';
+import { SelectChangeEvent } from '@mui/material/Select';
 import { useBookingStore } from '../store/booking';
+
+interface FilterState {
+  hubId: string;
+  paymentStatus: string;
+  startDate: string;
+  endDate: string;
+}
 
 const BookingHistoryPage: React.FC = () => {
   const { bookingHistory } = useBookingStore();
@@ -32,7 +40,7 @@ const BookingHistoryPage: React.FC = () => {
     startDate: '',
     endDate: '',
   });
-  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
+  // const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
 
   // Reset window.currentBookingInfo when the page loads
   useEffect(() => {
@@ -84,13 +92,30 @@ const BookingHistoryPage: React.FC = () => {
       });
   }, [bookingHistory, filter]);
 
-  const handleFilterChange = (e: React.ChangeEvent<{ name?: string; value: unknown }>) => {
+  const handleSelectChange = (e: SelectChangeEvent<string>) => {
     const { name, value } = e.target;
     if (name) {
-      setFilter((prev) => ({ ...prev, [name as string]: value }));
+      setFilter((prev: FilterState) => ({ ...prev, [name]: value }));
     }
   };
 
+
+  const handleFilterChange = (
+    e: SelectChangeEvent<string> | React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    if (name) {
+      setFilter((prev: FilterState) => ({ ...prev, [name]: value }));
+    }
+  };
+
+  const handleTextFieldChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    if (name) {
+      setFilter((prev: FilterState) => ({ ...prev, [name]: value }));
+    }
+  };
+  
   const renderToolChips = (configDetails: any) => {
     if (!configDetails) return <Typography variant="body2" color="text.secondary">No configuration selected</Typography>;
 
@@ -133,8 +158,8 @@ const BookingHistoryPage: React.FC = () => {
                   name="hubId"
                   value={filter.hubId}
                   label="Hub Location"
-                  onChange={handleFilterChange}
-                >
+                  onChange={handleSelectChange}
+                  >
                   <MenuItem value="all">All Hubs</MenuItem>
                   <MenuItem value={1}>Lekki Hub</MenuItem>
                   <MenuItem value={2}>Yaba Hub</MenuItem>
@@ -162,12 +187,8 @@ const BookingHistoryPage: React.FC = () => {
                 name="startDate"
                 label="Start Date"
                 type="date"
-                fullWidth
-                variant="outlined"
-                size="small"
-                InputLabelProps={{ shrink: true }}
                 value={filter.startDate}
-                onChange={handleFilterChange}
+                onChange={handleTextFieldChange}
               />
             </Grid>
           </Grid>

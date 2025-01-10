@@ -1,3 +1,5 @@
+import { BookingResult } from "@/types";
+
 export const finalizeBooking = (bookingResult: BookingResult) => {
   // Retrieve existing booking results from sessionStorage
   const existingResults = JSON.parse(sessionStorage.getItem('bookingResults') || '[]');

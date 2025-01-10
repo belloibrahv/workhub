@@ -128,7 +128,7 @@ const ToolSelectionPage: React.FC = () => {
           <Button
             key={option.id}
             variant={selectedConfig[category] === option.value ? 'contained' : 'outlined'}
-            color={selectedConfig[category] === option.value ? 'primary' : 'default'}
+            color={selectedConfig[category] === option.value ? 'primary' : 'inherit'} 
             onClick={() => handleSelect(category, option.value)}
             sx={{
               minWidth: 120,
