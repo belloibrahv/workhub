@@ -5,7 +5,7 @@ export const finalizeBooking = (bookingResult: BookingResult) => {
   const existingResults = JSON.parse(sessionStorage.getItem('bookingResults') || '[]');
 
   // Destructure the bookingResult to get hubDetails and remove the `id` from hubDetails
-  const { hubDetails, ...restBookingData } = bookingResult;
+  const { hubDetails , ...restBookingData } = bookingResult;
 
   // Remove `id` from `hubDetails`
   const { id, ...hubDetailsWithoutId } = hubDetails;

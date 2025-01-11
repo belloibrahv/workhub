@@ -1,5 +1,6 @@
 export interface BookingResult {
   timestamp?: string;
+  isInFinalPage;
   hubDetails: {
     id: number;
     name: string;

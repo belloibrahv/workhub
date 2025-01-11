@@ -139,7 +139,7 @@ const ConfirmationPage: React.FC = () => {
     };
 
     // Remove unneeded fields
-    // delete bookingResult.isInFinalPage;
+    delete bookingResult.isInFinalPage;
     delete bookingResult.hubDetails.id;
 
     const existingResults = window.bookingResults || [];
