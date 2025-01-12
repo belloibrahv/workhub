@@ -8,7 +8,78 @@ import {
   Typography,
   CircularProgress,
   Stack,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  FormHelperText,
 } from '@mui/material';
+
+
+interface TimeInputProps {
+  label: string;
+  name: string;
+  value: string;
+  onChange: (e: { target: { name: string; value: string } }) => void;
+  error?: boolean;
+  helperText?: string;
+  required?: boolean;
+}
+
+const TimeInput: React.FC<TimeInputProps> = ({
+  label,
+  name,
+  value,
+  onChange,
+  error = false,
+  helperText = '',
+  required = false,
+}) => {
+  // Generate hours for 24-hour format
+  const hours = Array.from({ length: 24 }, (_, i) => 
+    `${i.toString().padStart(2, '0')}:00`
+  );
+
+  const handleChange = (newValue: string) => {
+    onChange({
+      target: {
+        name,
+        value: newValue,
+      },
+    });
+  };
+
+  return (
+    <FormControl fullWidth error={error} required={required}>
+      <InputLabel id={`${name}-label`}>{label}</InputLabel>
+      <Select
+        labelId={`${name}-label`}
+        value={value}
+        label={label}
+        onChange={(e) => handleChange(e.target.value)}
+        MenuProps={{
+          PaperProps: {
+            style: {
+              maxHeight: 300,
+            },
+          },
+        }}
+      >
+        <MenuItem value="">
+          <em>Select time</em>
+        </MenuItem>
+        {hours.map((hour) => (
+          <MenuItem key={hour} value={hour}>
+            {hour}
+          </MenuItem>
+        ))}
+      </Select>
+      {helperText && <FormHelperText>{helperText}</FormHelperText>}
+    </FormControl>
+  );
+};
+
+
 
 const CheckinPage: React.FC = () => {
   const { hubId } = useParams<{ hubId: string }>();
@@ -296,38 +367,25 @@ const CheckinPage: React.FC = () => {
               }
             }}
           />
-          <TextField
-              label="Start Hour"
-              name="startHour"
-              type="time"
-              value={formData.startHour}
-              onChange={handleInputChange}
-              fullWidth
-              required
-              InputLabelProps={{ shrink: true }}
-              inputProps={{
-                step: 3600, // Disable minute selection
-                pattern: "[0-2][0-9]:00", // Ensure 24-hour format (HH:00)
-              }}
-              error={!!errors.startHour}
-              helperText={errors.startHour || "Select the start time (hourly increments only)."}
-            />
-            <TextField
-              label="End Hour"
-              name="endHour"
-              type="time"
-              value={formData.endHour}
-              onChange={handleInputChange}
-              fullWidth
-              required
-              InputLabelProps={{ shrink: true }}
-              inputProps={{
-                step: 3600, // Disable minute selection
-                pattern: "[0-2][0-9]:00", // Ensure 24-hour format (HH:00)
-              }}
-              error={!!errors.endHour}
-              helperText={errors.endHour || "Select the end time (hourly increments only)."}
-            />
+          <TimeInput
+            label="Start Hour"
+            name="startHour"
+            value={formData.startHour}
+            onChange={handleInputChange}
+            error={!!errors.startHour}
+            helperText={errors.startHour || "Select the start time (hourly increments only)"}
+            required
+          />
+
+          <TimeInput
+            label="End Hour"
+            name="endHour"
+            value={formData.endHour}
+            onChange={handleInputChange}
+            error={!!errors.endHour}
+            helperText={errors.endHour || "Select the end time (hourly increments only)"}
+            required
+          />
 
           <Typography>Total Book Hours: {totalBookHours} Hours</Typography>
           <Typography variant="h6">Total Book Price: ₦{totalBookPrice}</Typography>
