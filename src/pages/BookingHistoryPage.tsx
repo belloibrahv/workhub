@@ -189,6 +189,7 @@ const BookingHistoryPage: React.FC = () => {
                 type="date"
                 value={filter.startDate}
                 onChange={handleTextFieldChange}
+                focused
               />
             </Grid>
           </Grid>
